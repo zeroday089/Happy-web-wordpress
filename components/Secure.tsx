@@ -14,7 +14,11 @@ import { useState,useRef } from "react";
 import { motion } from "framer-motion";
 import BookingDetailsForm from "./BookingDetailsForm";
 export default function Secure() {
-const [activeBooking, setActiveBooking] = useState<{ guide: string; serviceName: string } | null>(null);
+const [activeBooking, setActiveBooking] = useState<{
+  guide: string;
+  serviceName: string;
+  session?: string;
+} | null>(null);
   const bookingRef = useRef<HTMLDivElement>(null);
 const container = {
   hidden: {},
@@ -36,14 +40,15 @@ const fadeUp = {
 
 const services = [
   { name: "Tarot Guidance",     detail: "30 mins • ₹3,000",  img: "/Happy Ho_Payments_Tarot Guidance.svg",       hasSessionSelect: false, guides: ["Jwalant S.", "Nona", "Saachi A.", "Monika S."], sessions: [] },
-  { name: "Energy Healing",     detail: "45 mins • ₹10,000", img: "/Happy Ho_Payments_Energy Healing.svg",       hasSessionSelect: false, guides: ["Pooja", "Nona", "Monika"],                      sessions: [] },
+  { name: "Energy Healing",     detail: "45 mins • ₹7,500", img: "/Happy Ho_Payments_Energy Healing.svg",       hasSessionSelect: false, guides: ["Pooja", "Nona", "Monika"],                      sessions: [] },
   { name: "Astrology",          detail: "30 mins • ₹4,500",  img: "/Happy Ho_Payments_Astrology.svg",            hasSessionSelect: false, guides: ["Monika"],                                       sessions: [] },
-  { name: "Numerology",         detail: "₹15,000",           img: "/Happy Ho_Payments_Numerology.svg",           hasSessionSelect: false, guides: ["Saachi A."],                                    sessions: [] },
+  { name: "Numerology",         detail: "₹7,500",           img: "/Happy Ho_Payments_Numerology.svg",           hasSessionSelect: false, guides: ["Saachi A."],                                    sessions: [] },
   { name: "Name Correction",    detail: "₹15,000",           img: "/Happy Ho_Payments_Name Correction.svg",      hasSessionSelect: false, guides: ["Saachi A."],                                    sessions: [] },
   { name: "Conscious Guidance", detail: "₹15,000",           img: "/Happy Ho_Payments_Conscious Guidance.svg",   hasSessionSelect: false, guides: ["Pooja"],                                        sessions: [] },
-  { name: "Meditation",         detail: "",                  img: "/Happy Ho_Payments_Meditation.svg",           hasSessionSelect: true,  guides: ["Jwalant S.", "Nagesh", "Dr Sandeep A"],            sessions: ["Single Session: ₹5,000", "5 Sessions: ₹25,000", "10 Sessions: ₹45,000"] },
+  { name: "Meditation",         detail: "",                  img: "/Happy Ho_Payments_Meditation.svg",           hasSessionSelect: true,  guides: ["Jwalant S."],                                   sessions: ["Single Session: ₹5,000", "5 Sessions: ₹25,000", "10 Sessions: ₹45,000"] },
   { name: "Vastu",              detail: "",                  img: "/Happy Ho_Payments_Vastu.svg",                hasSessionSelect: true,  guides: ["Saachi A."],                                    sessions: ["Site Visit: ₹11,000", "Detailed Report: ₹40,000"] },
 ];
+
   const [selectedGuides, setSelectedGuides] = useState<string[]>(
   services.map(() => "")
 );
@@ -53,7 +58,7 @@ const services = [
 );
 
   return (
-    <div className="p-4 pt-8 md:p-8 lg:p-8 mx-auto max-w-[1920px]">
+    <div className="pt-8 md:p-8 lg:p-8 mx-auto max-w-[1920px]">
       <div className="flex flex-col gap-8">
 
         {/* Progress Steps */}
@@ -91,7 +96,7 @@ const services = [
       </motion.div>
 
       {/* Centering wrapper */}
-      <div className="flex justify-center items-center w-full">
+      <div className="flex justify-center items-center w-full p-4">
 
         {/* Cards */}
         <motion.div
@@ -202,9 +207,22 @@ const services = [
                   <button
                     onClick={() => {
                       if (!selectedGuides[i]) return;
-                      setActiveBooking({ guide: selectedGuides[i], serviceName: service.name });
+
+                      setActiveBooking({
+                        guide: selectedGuides[i],
+                        serviceName: service.name,
+
+                        // pass only if exists
+                        ...(selectedSessions[i] && {
+                          session: selectedSessions[i],
+                        }),
+                      });
+
                       setTimeout(() => {
-                        bookingRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                        bookingRef.current?.scrollIntoView({
+                          behavior: "smooth",
+                          block: "start",
+                        });
                       }, 100);
                     }}
                     className="bg-[#3f5c4a] text-[#e9dac9] px-4 lg:px-6 py-1 rounded-full text-sm font-medium hover:bg-[#162d22] transition whitespace-nowrap"
@@ -222,11 +240,15 @@ const services = [
 
      {activeBooking && (
         <div ref={bookingRef}>
-          <BookingDetailsForm
-            key={activeBooking.guide + activeBooking.serviceName}
-            guide={activeBooking.guide}
-            serviceName={activeBooking.serviceName}
-          />
+         <BookingDetailsForm
+          key={
+            activeBooking.guide +
+            activeBooking.serviceName
+          }
+          guide={activeBooking.guide}
+          serviceName={activeBooking.serviceName}
+          session={activeBooking.session}
+        />
         </div>
       )}
     </div>

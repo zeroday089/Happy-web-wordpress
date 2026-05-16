@@ -9,27 +9,14 @@ import { useState ,useRef,useEffect} from "react";
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { ChevronDown } from "lucide-react";
-interface BookingFormData {
-  fullName: string;
-  email: string;
-  countryCode: string;
-  phone: string;
-  selectedService: string;
-  selectedGuide: string;
-  sessionType: "online" | "offline" | "";
-  preferredDateTime: string;
-  concern: string;
-}
+import axios from "axios";
+import { BookingDetailsFormProps, BookingFormData, meditationSessionPricing, servicePricing, vastuSessionPricing } from "@/type/api";
+import { toast } from "sonner";
 
-interface BookingDetailsFormProps {
-  guide: string;
-  serviceName: string;
-}
-
-export default function BookingDetailsForm({ guide, serviceName }: BookingDetailsFormProps) {
+export default function BookingDetailsForm({ guide, serviceName,session }: BookingDetailsFormProps) {
 
   const [isSubmitted, setIsSubmitted] = useState(false);
-
+  const [amount, setAmount] = useState<number>(0);
   const container = {
     hidden: {},
     show: {
@@ -65,16 +52,287 @@ export default function BookingDetailsForm({ guide, serviceName }: BookingDetail
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-const paymentRef = useRef<HTMLDivElement>(null);
-
-const handleSubmit = (e: React.FormEvent) => {
+const paymentRef = useRef<HTMLDivElement>(null);const handleCreateOrder = async (
+  e: React.FormEvent
+) => {
   e.preventDefault();
-  console.log(form);
-  setIsSubmitted(true);
-  setTimeout(() => {
-    paymentRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, 100);
+
+  // =========================
+  // VALIDATION
+  // =========================
+
+  if (!form.fullName.trim()) {
+    toast.error("Please enter full name");
+    return;
+  }
+
+  if (!form.email.trim()) {
+    toast.error("Please enter email");
+    return;
+  }
+
+  if (!form.phone.trim()) {
+    toast.error("Please enter phone number");
+    return;
+  }
+
+  if (!form.sessionType) {
+    toast.error("Please select session type");
+    return;
+  }
+
+  // =========================
+  // PAYLOAD
+  // =========================
+
+  const payload = {
+    fullName: form.fullName,
+
+    email: form.email,
+
+    phoneNumber:
+      form.countryCode + form.phone,
+
+    selectedService: serviceName,
+
+    selectedGuide: guide,
+
+    sessionType:
+      form.sessionType === "online"
+        ? "Online"
+        : "Offline",
+
+    preferredDateTime:
+      form.preferredDateTime,
+
+    concernArea: form.concern,
+
+    ...(session && { session }),
+  };
+
+  try {
+    // =========================
+    // CREATE ORDER
+    // =========================
+
+    const response = await axios.post(
+      `${process.env.NEXT_PUBLIC_API_URL}/payment/create-order`,
+      { payload }
+    );
+
+    console.log(
+      "CREATE ORDER RESPONSE:",
+      response.data
+    );
+
+    if (!response.data.success) {
+      toast.error(
+        "Payment initiation failed"
+      );
+      return;
+    }
+
+    // FIXED HERE
+    const paymentData =
+      response.data.data;
+
+    // =========================
+    // CHECK RAZORPAY SDK
+    // =========================
+
+    if (!(window as any).Razorpay) {
+      toast.error(
+        "Razorpay SDK failed to load"
+      );
+      return;
+    }
+
+    // =========================
+    // RAZORPAY OPTIONS
+    // =========================
+
+    const options = {
+      key: paymentData.key,
+
+      amount: paymentData.amount,
+
+      currency: paymentData.currency,
+
+      name: "Your Business Name",
+
+      description: "Booking Payment",
+
+      order_id: paymentData.orderId,
+
+      prefill: {
+        name: form.fullName,
+
+        email: form.email,
+
+        contact:
+          form.countryCode + form.phone,
+      },
+
+      theme: {
+        color: "#6366f1",
+      },
+
+      // =========================
+      // PAYMENT SUCCESS
+      // =========================
+
+      handler: async (
+        razorpayResponse: {
+          razorpay_order_id: string;
+          razorpay_payment_id: string;
+          razorpay_signature: string;
+        }
+      ) => {
+        try {
+          console.log(
+            "PAYMENT SUCCESS:",
+            razorpayResponse
+          );
+
+          // =========================
+          // VERIFY PAYMENT
+          // =========================
+
+          const verifyResponse =
+            await axios.post(
+              `${process.env.NEXT_PUBLIC_API_URL}/payment/verify`,
+              {
+                razorpay_order_id:
+                  razorpayResponse.razorpay_order_id,
+
+                razorpay_payment_id:
+                  razorpayResponse.razorpay_payment_id,
+
+                razorpay_signature:
+                  razorpayResponse.razorpay_signature,
+              }
+            );
+
+          console.log(
+            "VERIFY RESPONSE:",
+            verifyResponse.data
+          );
+
+          if (
+            verifyResponse.data.success
+          ) {
+            toast.success(
+              "Payment successful 🎉"
+            );
+          } else {
+            toast.error(
+              "Payment verification failed"
+            );
+          }
+        } catch (error) {
+          console.error(
+            "Verification Error:",
+            error
+          );
+
+          toast.error(
+            "Something went wrong during payment verification."
+          );
+        }
+      },
+
+      // =========================
+      // PAYMENT FAILED
+      // =========================
+
+      modal: {
+        ondismiss: () => {
+          console.log(
+            "Payment popup closed"
+          );
+
+          toast.info(
+            "Payment cancelled"
+          );
+        },
+      },
+    };
+
+    console.log(
+      "RAZORPAY OPTIONS:",
+      options
+    );
+
+    // =========================
+    // OPEN RAZORPAY
+    // =========================
+
+    const rzp = new (
+      window as any
+    ).Razorpay(options);
+
+    rzp.on(
+      "payment.failed",
+      (response: any) => {
+        console.error(
+          "Payment Failed:",
+          response
+        );
+
+        toast.error(
+          response.error.description ||
+            "Payment failed"
+        );
+      }
+    );
+
+    rzp.open();
+  } catch (error: any) {
+    console.error(
+      "Create Order Error:",
+      error
+    );
+
+    toast.error(
+      error?.response?.data?.message ||
+        error.message ||
+        "Something went wrong while initiating payment."
+    );
+  }
 };
+  const handleSubmit = async (
+    e: React.FormEvent
+  ) => {
+    e.preventDefault();
+    let calculatedAmount = 0;
+    // Meditation pricing
+    if (
+      serviceName === "Meditation" &&
+      session
+    ) {
+      calculatedAmount =
+        meditationSessionPricing.get(session) || 0;
+    // Vastu pricing
+    } else if (
+      serviceName === "Vastu" &&
+      session
+    ) {
+      calculatedAmount =
+        vastuSessionPricing.get(session) || 0;
+    // Normal services
+    } else {
+      calculatedAmount =
+        servicePricing.get(form.selectedService) || 0;
+    }
+    setAmount(calculatedAmount);
+    setIsSubmitted(true);
+    setTimeout(() => {
+      paymentRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 100);
+  };
   useEffect(() => {
   setForm((prev) => ({
     ...prev,
@@ -307,17 +565,17 @@ const handleSubmit = (e: React.FormEvent) => {
 
           <div className="flex justify-between font-semibold text-lg mt-2">
             <span>Amount:</span>
-            <span>₹3000</span>
+            <span>Rs {amount}/-</span>
           </div>
 
           {/* Buttons */}
-          <button className="mt-4 bg-[#3f5c4a] text-white py-3 rounded-xl text-sm font-medium hover:bg-[#162d22] transition">
-            Pay via Razorpay / UPI
+          <button onClick={handleCreateOrder} className="mt-4 bg-[#3f5c4a] text-white py-3 rounded-xl text-sm font-medium hover:bg-[#162d22] transition">
+            Pay 
           </button>
 
-          <button className="bg-[#8b6b4a] text-white py-3 rounded-xl text-sm font-medium">
+          {/* <button className="bg-[#8b6b4a] text-white py-3 rounded-xl text-sm font-medium">
             Pay via Bank Transfer
-          </button>
+          </button> */}
         </div>
       </div>
     </motion.div>

@@ -99,7 +99,7 @@ export default function ContactSection() {
                 Phone Number*
               </label>
 
-              <div className="flex gap-2">
+              <div className="flex gap-2 w-full">
                 <input
                   type="text"
                   className="w-16 h-12 rounded-lg border border-[#8A8A8A] bg-white px-2 outline-none"

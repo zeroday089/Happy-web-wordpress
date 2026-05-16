@@ -61,6 +61,7 @@ export default function Popup({
     goals: "",
     hearAbout: "",
     agree: false,
+      showSessionFormat: false,
   });
 
   if (!open) return null;
@@ -81,82 +82,96 @@ export default function Popup({
           : value,
     });
   };
+const handleSubmit = async (
+  e: React.FormEvent<HTMLFormElement>
+) => {
 
-  const handleSubmit = async (
-    e: React.FormEvent<HTMLFormElement>
-  ) => {
+  e.preventDefault();
 
-    e.preventDefault();
+  try {
 
-    try {
+    setLoading(true);
 
-      setLoading(true);
+    const payload: Record<string, string> = {
+      Full_Name: formData.fullName,
+      Designation: formData.designation,
+      Company_Name: formData.companyName,
+      Company_Email: formData.companyEmail,
+      Work_Email: formData.workEmail,
+      Contact_Number: formData.contactNumber,
+      City: formData.city,
+      Organization_Type: formData.organizationType,
+      Workshop_Type: formData.workshopType,
+      Preferred_Date: formData.preferredDate,
+      Expected_Participation: formData.expectedParticipation,
+      Goals: formData.goals,
+      Hear_About: formData.hearAbout,
+      Agree_To_Contact: formData.agree ? "Yes" : "No",
+    };
 
-      const response = await fetch(
-        "https://formsubmit.co/ajax/chandwadkarshreyash@gmail.com",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-
-          body: JSON.stringify({
-            Full_Name: formData.fullName,
-            Designation: formData.designation,
-            Company_Name: formData.companyName,
-            Company_Email: formData.companyEmail,
-            Work_Email: formData.workEmail,
-            Contact_Number: formData.contactNumber,
-            City: formData.city,
-            Organization_Type: formData.organizationType,
-            Workshop_Type: formData.workshopType,
-            Session_Format: formData.sessionFormat,
-            Preferred_Date: formData.preferredDate,
-            Expected_Participation: formData.expectedParticipation,
-            Goals: formData.goals,
-            Hear_About: formData.hearAbout,
-            Agree_To_Contact: formData.agree ? "Yes" : "No",
-          }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (data.success) {
-        
-        alert("Form submitted successfully!");
-                localStorage.setItem("fillthepopup","true")
-        setFormData({
-          fullName: "",
-          designation: "",
-          companyName: "",
-          companyEmail: "",
-          workEmail: "",
-          contactNumber: "",
-          city: "",
-          organizationType: "",
-          workshopType: "",
-          sessionFormat: "",
-          preferredDate: "",
-          expectedParticipation: "",
-          goals: "",
-          hearAbout: "",
-          agree: false,
-        });
-
-        onClose();
-      }
-
-    } catch (error) {
-
-      console.log(error);
-      alert("Something went wrong");
-
-    } finally {
-      setLoading(false);
+    // Only send Session_Format if checkbox is checked
+    if (formData.showSessionFormat) {
+      payload.Session_Format = formData.sessionFormat;
     }
-  };
+
+    const response = await fetch(
+      "https://formsubmit.co/ajax/shreyashchandwadkar@gmail.com",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    const data = await response.json();
+
+    if (data.success) {
+
+      alert("Form submitted successfully!");
+
+      localStorage.setItem("fillthepopup", "true");
+
+      setFormData({
+        fullName: "",
+        designation: "",
+        companyName: "",
+        companyEmail: "",
+        workEmail: "",
+        contactNumber: "",
+        city: "",
+        organizationType: "",
+        workshopType: "",
+        sessionFormat: "",
+        preferredDate: "",
+        expectedParticipation: "",
+        goals: "",
+        hearAbout: "",
+        agree: false,
+        showSessionFormat: false,
+      });
+
+      onClose();
+
+    } else {
+
+      alert("Failed to submit form");
+
+    }
+
+  } catch (error) {
+
+    console.log(error);
+    alert("Something went wrong");
+
+  } finally {
+
+    setLoading(false);
+
+  }
+};
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 overflow-y-auto">
@@ -328,39 +343,59 @@ export default function Popup({
                 </div>
               </div>
 
-              {/* Other */}
-              <div className="pt-2">
-                <p className="text-sm font-semibold text-[#444] mb-3">
-                  Other (Please Specify)
-                </p>
+      {/* Other */}
+<div className="pt-2">
 
-                <div className="w-full border-b border-[#b89b73]" />
-              </div>
+  <label className="flex items-center gap-3">
 
+    <input
+      type="checkbox"
+      name="showSessionFormat"
+      checked={formData.showSessionFormat}
+      onChange={handleChange}
+      className="h-3 w-3 cursor-pointer appearance-none rounded-full border-2 border-black checked:bg-[#315a4d] checked:border-[#315a4d] relative"
+    />
+
+    <span className="text-sm font-semibold text-[#444]">
+      Other (Please Specify)
+    </span>
+
+  </label>
+
+</div>
               {/* Session Format */}
-              <div>
-                <label className="block text-sm font-semibold text-[#444] mb-3">
-                  Preferred Session Format
-                </label>
+              {/* Session Format */}
+{formData.showSessionFormat && (
+  <div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {[
-                    "Online (Virtual)",
-                    "In-person (At your location)",
-                    "Retreat (Selected participants)",
-                    "Hybrid (Both Online/Offline)",
-                  ].map((item) => (
-                    <Radio
-                      key={item}
-                      label={item}
-                      name="sessionFormat"
-                      value={item}
-                      selectedValue={formData.sessionFormat}
-                      onChange={handleChange}
-                    />
-                  ))}
-                </div>
-              </div>
+    <label className="block text-sm font-semibold text-[#444] mb-3">
+      Preferred Session Format
+    </label>
+
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+
+      {[
+        "Online (Virtual)",
+        "In-person (At your location)",
+        "Retreat (Selected participants)",
+        "Hybrid (Both Online/Offline)",
+      ].map((item) => (
+
+        <Radio
+          key={item}
+          label={item}
+          name="sessionFormat"
+          value={item}
+          selectedValue={formData.sessionFormat}
+          onChange={handleChange}
+        />
+
+      ))}
+
+    </div>
+
+  </div>
+)}
 
               {/* Date */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

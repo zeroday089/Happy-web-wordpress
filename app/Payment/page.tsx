@@ -11,12 +11,12 @@ export default function Payment(){
         <>
         <Journery/>
         <Secure/>
-               <div className="hidden md:block">
-                                     <Footer/>
-                                 </div>
-                                   <div className="block md:hidden">
-                                     <FooterSmall/>
-                                 </div>
+        <div className="hidden md:block">
+            <Footer/>
+        </div>
+        <div className="block md:hidden">
+            <FooterSmall/>
+        </div>
         </> 
     );
 }
