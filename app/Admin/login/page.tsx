@@ -31,7 +31,7 @@ const router = useRouter();
       setLoading(true);
 
       const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL_ADMIN}/api/v2/admin/login`,
+        `${process.env.NEXT_PUBLIC_API_URL_ADMIN}/login`,
         formData,
         {
           withCredentials: true,
