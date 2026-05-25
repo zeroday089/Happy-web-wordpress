@@ -43,6 +43,11 @@ export async function generateMetadata({ params }: ArticlePageProps): Promise<Me
   };
 }
 
+function hasLeadingImage(html: string): boolean {
+  const sanitized = sanitizeWordPressHtml(html);
+  return /^\s*(?:<p[^>]*>\s*)?(?:<a[^>]*>\s*)?<img\b/i.test(sanitized);
+}
+
 export default async function ArticlePage({ params }: ArticlePageProps) {
   const { slug } = await params;
   const post = await fetchWordPressPostBySlug(slug);
@@ -53,6 +58,9 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
   const featuredImage = resolvePostImage(post);
   const cleanedContent = removeDuplicateFeaturedImageFromContent(post.content.rendered, featuredImage);
+
+  // Final safety: if content itself begins with an image, hide hero image to avoid duplicates.
+  const shouldRenderHeroImage = !hasLeadingImage(cleanedContent);
 
   return (
     <>
@@ -74,14 +82,19 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
       </div>
 
       <section className="px-6 xl:px-8 py-10 mx-auto max-w-[980px]">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={featuredImage}
-          alt={stripHtml(post.title.rendered)}
-          className="w-full max-h-[480px] object-cover rounded-3xl"
-        />
+        {shouldRenderHeroImage ? (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={featuredImage}
+              alt={stripHtml(post.title.rendered)}
+              className="w-full max-h-[480px] object-cover rounded-3xl"
+            />
+          </>
+        ) : null}
+
         <article
-          className="wp-content mt-8 text-[#2f2f2f]"
+          className={`wp-content text-[#2f2f2f] ${shouldRenderHeroImage ? "mt-8" : ""}`}
           dangerouslySetInnerHTML={{ __html: cleanedContent }}
         />
       </section>
