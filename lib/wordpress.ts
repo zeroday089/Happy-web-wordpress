@@ -126,6 +126,7 @@ function canonicalizeBloggerImageUrl(value: string): string {
   if (!normalized) return value;
   return normalized
     .replace(/\/s\d+(?:-[a-z])?(?=\/|$)/gi, "/s0")
+    .replace(/=w\d+-h\d+(?:-[a-z0-9-]+)?$/i, "")
     .replace(/\?.*$/, "")
     .replace(/#.*$/, "");
 }
@@ -169,9 +170,6 @@ function mapEntryToPost(entry: BloggerEntry): WordPressPost | null {
     content: { rendered: content },
     excerpt: { rendered: summary },
     featuredImage: preferredImage ? upscaleBloggerImageUrl(preferredImage) : null,
-
-    featuredImage: normalizeImageUrl(entry["media$thumbnail"]?.url),
-
   };
 }
 
@@ -193,7 +191,6 @@ export function resolvePostImage(post: WordPressPost): string {
   );
 }
 
-
 export function removeDuplicateFeaturedImageFromContent(contentHtml: string, featuredImageUrl: string): string {
   const sanitizedContent = sanitizeWordPressHtml(contentHtml);
   const normalizedFeatured = normalizeImageUrl(featuredImageUrl);
@@ -203,7 +200,7 @@ export function removeDuplicateFeaturedImageFromContent(contentHtml: string, fea
   }
 
   const leadingImageMatch = sanitizedContent.match(
-    /^\s*(?:<p[^>]*>\s*)?<img[^>]*src=["']([^"']+)["'][^>]*>(?:\s*<\/p>)?\s*/i,
+    /^\s*(?:<p[^>]*>\s*)?(?:<a[^>]*>\s*)?<img[^>]*src=["']([^"']+)["'][^>]*>(?:\s*<\/a>)?(?:\s*<\/p>)?\s*/i,
   );
 
   if (!leadingImageMatch?.[1]) {
@@ -222,14 +219,11 @@ export function removeDuplicateFeaturedImageFromContent(contentHtml: string, fea
     return sanitizedContent;
   }
 
-  return sanitizedContent.replace(/^\s*(?:<p[^>]*>\s*)?<img[^>]*>(?:\s*<\/p>)?\s*/i, "");
+  return sanitizedContent.replace(
+    /^\s*(?:<p[^>]*>\s*)?(?:<a[^>]*>\s*)?<img[^>]*>(?:\s*<\/a>)?(?:\s*<\/p>)?\s*/i,
+    "",
+  );
 }
-
-async function fetchFromBlogger(pathWithQuery: string): Promise<BloggerFeedResponse> {
-  const response = await fetch(`${BLOGGER_BASE_URL}${BLOGGER_FEED_PATH}${pathWithQuery}`, {
-    next: { revalidate: 300 },
-    headers: { Accept: "application/json" },
-  });
 
 async function fetchFromBlogger(pathWithQuery: string): Promise<BloggerFeedResponse> {
   const response = await fetch(`${BLOGGER_BASE_URL}${BLOGGER_FEED_PATH}${pathWithQuery}`, {
@@ -265,14 +259,6 @@ export async function fetchWordPressPostBySlug(slug: string): Promise<WordPressP
   const params = new URLSearchParams({ alt: "json", "max-results": "150" });
   const data = await fetchFromBlogger(`?${params.toString()}`);
   const entries = data.feed?.entry ?? [];
-
-  for (const entry of entries) {
-    const mapped = mapEntryToPost(entry);
-    if (mapped?.slug === slug) {
-      return mapped;
-    }
-  }
-
 
   for (const entry of entries) {
     const mapped = mapEntryToPost(entry);
