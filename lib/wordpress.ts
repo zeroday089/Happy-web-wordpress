@@ -112,6 +112,10 @@ function normalizeImageUrl(value?: string): string | null {
   return null;
 }
 
+function upscaleBloggerImageUrl(value: string): string {
+  return value.replace(/\/s\d+(?:-[a-z])?(?=\/|$)/i, "/s1600");
+}
+
 function deriveSlugFromLink(value: string): string {
   try {
     const pathname = new URL(value).pathname;
@@ -136,7 +140,8 @@ function mapEntryToPost(entry: BloggerEntry): WordPressPost | null {
 
   const content = entry.content?.$t ?? "";
   const summary = entry.summary?.$t ?? content;
-
+  
+  const thumbnailUrl = normalizeImageUrl(entry["media$thumbnail"]?.url);
   return {
     id: parseBloggerId(entry.id?.$t),
     date: entry.published?.$t ?? new Date().toISOString(),
@@ -146,6 +151,7 @@ function mapEntryToPost(entry: BloggerEntry): WordPressPost | null {
     title: { rendered: entry.title?.$t ?? "Untitled" },
     content: { rendered: content },
     excerpt: { rendered: summary },
+    featuredImage: thumbnailUrl ? upscaleBloggerImageUrl(thumbnailUrl) : null,
     featuredImage: normalizeImageUrl(entry["media$thumbnail"]?.url),
   };
 }
