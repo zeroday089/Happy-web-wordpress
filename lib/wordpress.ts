@@ -112,6 +112,24 @@ function normalizeImageUrl(value?: string): string | null {
   return null;
 }
 
+function extractFirstImageFromHtml(content: string): string | null {
+  const match = content.match(/<img[^>]+src=["']([^"']+)["'][^>]*>/i);
+  return normalizeImageUrl(match?.[1]);
+}
+
+function upscaleBloggerImageUrl(value: string): string {
+  return value.replace(/\/s\d+(?:-[a-z])?(?=\/|$)/i, "/s1600");
+}
+
+function canonicalizeBloggerImageUrl(value: string): string {
+  const normalized = normalizeImageUrl(value);
+  if (!normalized) return value;
+  return normalized
+    .replace(/\/s\d+(?:-[a-z])?(?=\/|$)/gi, "/s0")
+    .replace(/\?.*$/, "")
+    .replace(/#.*$/, "");
+}
+
 function deriveSlugFromLink(value: string): string {
   try {
     const pathname = new URL(value).pathname;
@@ -137,6 +155,10 @@ function mapEntryToPost(entry: BloggerEntry): WordPressPost | null {
   const content = entry.content?.$t ?? "";
   const summary = entry.summary?.$t ?? content;
 
+  const thumbnailUrl = normalizeImageUrl(entry["media$thumbnail"]?.url);
+  const contentImageUrl = extractFirstImageFromHtml(content);
+  const preferredImage = contentImageUrl ?? thumbnailUrl;
+
   return {
     id: parseBloggerId(entry.id?.$t),
     date: entry.published?.$t ?? new Date().toISOString(),
@@ -146,7 +168,10 @@ function mapEntryToPost(entry: BloggerEntry): WordPressPost | null {
     title: { rendered: entry.title?.$t ?? "Untitled" },
     content: { rendered: content },
     excerpt: { rendered: summary },
+    featuredImage: preferredImage ? upscaleBloggerImageUrl(preferredImage) : null,
+
     featuredImage: normalizeImageUrl(entry["media$thumbnail"]?.url),
+
   };
 }
 
@@ -167,6 +192,44 @@ export function resolvePostImage(post: WordPressPost): string {
     "/67.png"
   );
 }
+
+
+export function removeDuplicateFeaturedImageFromContent(contentHtml: string, featuredImageUrl: string): string {
+  const sanitizedContent = sanitizeWordPressHtml(contentHtml);
+  const normalizedFeatured = normalizeImageUrl(featuredImageUrl);
+
+  if (!normalizedFeatured) {
+    return sanitizedContent;
+  }
+
+  const leadingImageMatch = sanitizedContent.match(
+    /^\s*(?:<p[^>]*>\s*)?<img[^>]*src=["']([^"']+)["'][^>]*>(?:\s*<\/p>)?\s*/i,
+  );
+
+  if (!leadingImageMatch?.[1]) {
+    return sanitizedContent;
+  }
+
+  const firstImageUrl = normalizeImageUrl(leadingImageMatch[1]);
+  if (!firstImageUrl) {
+    return sanitizedContent;
+  }
+
+  const isDuplicate =
+    canonicalizeBloggerImageUrl(firstImageUrl) === canonicalizeBloggerImageUrl(normalizedFeatured);
+
+  if (!isDuplicate) {
+    return sanitizedContent;
+  }
+
+  return sanitizedContent.replace(/^\s*(?:<p[^>]*>\s*)?<img[^>]*>(?:\s*<\/p>)?\s*/i, "");
+}
+
+async function fetchFromBlogger(pathWithQuery: string): Promise<BloggerFeedResponse> {
+  const response = await fetch(`${BLOGGER_BASE_URL}${BLOGGER_FEED_PATH}${pathWithQuery}`, {
+    next: { revalidate: 300 },
+    headers: { Accept: "application/json" },
+  });
 
 async function fetchFromBlogger(pathWithQuery: string): Promise<BloggerFeedResponse> {
   const response = await fetch(`${BLOGGER_BASE_URL}${BLOGGER_FEED_PATH}${pathWithQuery}`, {
@@ -202,6 +265,14 @@ export async function fetchWordPressPostBySlug(slug: string): Promise<WordPressP
   const params = new URLSearchParams({ alt: "json", "max-results": "150" });
   const data = await fetchFromBlogger(`?${params.toString()}`);
   const entries = data.feed?.entry ?? [];
+
+  for (const entry of entries) {
+    const mapped = mapEntryToPost(entry);
+    if (mapped?.slug === slug) {
+      return mapped;
+    }
+  }
+
 
   for (const entry of entries) {
     const mapped = mapEntryToPost(entry);
