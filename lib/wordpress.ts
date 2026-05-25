@@ -169,9 +169,6 @@ function mapEntryToPost(entry: BloggerEntry): WordPressPost | null {
     content: { rendered: content },
     excerpt: { rendered: summary },
     featuredImage: preferredImage ? upscaleBloggerImageUrl(preferredImage) : null,
-
-    featuredImage: normalizeImageUrl(entry["media$thumbnail"]?.url),
-
   };
 }
 
@@ -192,7 +189,6 @@ export function resolvePostImage(post: WordPressPost): string {
     "/67.png"
   );
 }
-
 
 export function removeDuplicateFeaturedImageFromContent(contentHtml: string, featuredImageUrl: string): string {
   const sanitizedContent = sanitizeWordPressHtml(contentHtml);
@@ -231,12 +227,6 @@ async function fetchFromBlogger(pathWithQuery: string): Promise<BloggerFeedRespo
     headers: { Accept: "application/json" },
   });
 
-async function fetchFromBlogger(pathWithQuery: string): Promise<BloggerFeedResponse> {
-  const response = await fetch(`${BLOGGER_BASE_URL}${BLOGGER_FEED_PATH}${pathWithQuery}`, {
-    next: { revalidate: 300 },
-    headers: { Accept: "application/json" },
-  });
-
   if (!response.ok) {
     throw new Error(`HTTP ${response.status}`);
   }
@@ -265,14 +255,6 @@ export async function fetchWordPressPostBySlug(slug: string): Promise<WordPressP
   const params = new URLSearchParams({ alt: "json", "max-results": "150" });
   const data = await fetchFromBlogger(`?${params.toString()}`);
   const entries = data.feed?.entry ?? [];
-
-  for (const entry of entries) {
-    const mapped = mapEntryToPost(entry);
-    if (mapped?.slug === slug) {
-      return mapped;
-    }
-  }
-
 
   for (const entry of entries) {
     const mapped = mapEntryToPost(entry);
