@@ -140,9 +140,8 @@ function mapEntryToPost(entry: BloggerEntry): WordPressPost | null {
 
   const content = entry.content?.$t ?? "";
   const summary = entry.summary?.$t ?? content;
-
+  
   const thumbnailUrl = normalizeImageUrl(entry["media$thumbnail"]?.url);
-
   return {
     id: parseBloggerId(entry.id?.$t),
     date: entry.published?.$t ?? new Date().toISOString(),
@@ -153,6 +152,7 @@ function mapEntryToPost(entry: BloggerEntry): WordPressPost | null {
     content: { rendered: content },
     excerpt: { rendered: summary },
     featuredImage: thumbnailUrl ? upscaleBloggerImageUrl(thumbnailUrl) : null,
+    featuredImage: normalizeImageUrl(entry["media$thumbnail"]?.url),
   };
 }
 
