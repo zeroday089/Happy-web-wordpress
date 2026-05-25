@@ -1,24 +1,8 @@
-const WORDPRESS_SITES = ["https://happyho.in", "https://www.happyho.in"];
-const WORDPRESS_API_SUFFIX = "/wp-json/wp/v2";
+const BLOGGER_BASE_URL = "https://happyhooblog.blogspot.com";
+const BLOGGER_FEED_PATH = "/feeds/posts/default";
 
 export interface WordPressRenderedField {
   rendered: string;
-}
-
-interface WordPressMediaSize {
-  source_url?: string;
-}
-
-interface WordPressFeaturedMedia {
-  source_url?: string;
-  media_details?: {
-    sizes?: {
-      large?: WordPressMediaSize;
-      medium_large?: WordPressMediaSize;
-      medium?: WordPressMediaSize;
-      thumbnail?: WordPressMediaSize;
-    };
-  };
 }
 
 export interface WordPressPost {
@@ -34,7 +18,40 @@ export interface WordPressPost {
     og_image?: Array<{ url: string }>;
   };
   _embedded?: {
-    "wp:featuredmedia"?: WordPressFeaturedMedia[];
+    "wp:featuredmedia"?: Array<{
+      source_url?: string;
+      media_details?: {
+        sizes?: {
+          large?: { source_url?: string };
+          medium_large?: { source_url?: string };
+          medium?: { source_url?: string };
+          thumbnail?: { source_url?: string };
+        };
+      };
+    }>;
+  };
+  featuredImage?: string | null;
+}
+
+interface BloggerLink {
+  rel: string;
+  href: string;
+}
+
+interface BloggerEntry {
+  id?: { $t?: string };
+  published?: { $t?: string };
+  updated?: { $t?: string };
+  title?: { $t?: string };
+  content?: { $t?: string };
+  summary?: { $t?: string };
+  link?: BloggerLink[];
+  "media$thumbnail"?: { url?: string };
+}
+
+interface BloggerFeedResponse {
+  feed?: {
+    entry?: BloggerEntry[];
   };
 }
 
@@ -95,6 +112,66 @@ function normalizeImageUrl(value?: string): string | null {
   return null;
 }
 
+function extractFirstImageFromHtml(content: string): string | null {
+  const match = content.match(/<img[^>]+src=["']([^"']+)["'][^>]*>/i);
+  return normalizeImageUrl(match?.[1]);
+}
+
+function upscaleBloggerImageUrl(value: string): string {
+  return value.replace(/\/s\d+(?:-[a-z])?(?=\/|$)/i, "/s1600");
+}
+
+function canonicalizeBloggerImageUrl(value: string): string {
+  const normalized = normalizeImageUrl(value);
+  if (!normalized) return value;
+  return normalized
+    .replace(/\/s\d+(?:-[a-z])?(?=\/|$)/gi, "/s0")
+    .replace(/\?.*$/, "")
+    .replace(/#.*$/, "");
+}
+
+function deriveSlugFromLink(value: string): string {
+  try {
+    const pathname = new URL(value).pathname;
+    const tail = pathname.split("/").filter(Boolean).pop() ?? "";
+    return tail.replace(/\.html$/, "");
+  } catch {
+    return value;
+  }
+}
+
+function parseBloggerId(value?: string): number {
+  if (!value) return Date.now();
+  const match = value.match(/post-(\d+)/);
+  if (match) return Number(match[1]);
+  const digits = value.replace(/\D/g, "");
+  return digits ? Number(digits.slice(-12)) : Date.now();
+}
+
+function mapEntryToPost(entry: BloggerEntry): WordPressPost | null {
+  const alternateLink = entry.link?.find((item) => item.rel === "alternate")?.href;
+  if (!alternateLink) return null;
+
+  const content = entry.content?.$t ?? "";
+  const summary = entry.summary?.$t ?? content;
+
+  const thumbnailUrl = normalizeImageUrl(entry["media$thumbnail"]?.url);
+  const contentImageUrl = extractFirstImageFromHtml(content);
+  const preferredImage = contentImageUrl ?? thumbnailUrl;
+
+  return {
+    id: parseBloggerId(entry.id?.$t),
+    date: entry.published?.$t ?? new Date().toISOString(),
+    modified: entry.updated?.$t ?? entry.published?.$t ?? new Date().toISOString(),
+    slug: deriveSlugFromLink(alternateLink),
+    link: alternateLink,
+    title: { rendered: entry.title?.$t ?? "Untitled" },
+    content: { rendered: content },
+    excerpt: { rendered: summary },
+    featuredImage: preferredImage ? upscaleBloggerImageUrl(preferredImage) : null,
+  };
+}
+
 export function resolvePostImage(post: WordPressPost): string {
   const media = post._embedded?.["wp:featuredmedia"]?.[0];
 
@@ -105,59 +182,97 @@ export function resolvePostImage(post: WordPressPost): string {
     media?.source_url ??
     media?.media_details?.sizes?.thumbnail?.source_url;
 
-  return normalizeImageUrl(featuredMediaUrl) ?? normalizeImageUrl(post.yoast_head_json?.og_image?.[0]?.url) ?? "/67.png";
+  return (
+    normalizeImageUrl(post.featuredImage ?? undefined) ??
+    normalizeImageUrl(featuredMediaUrl) ??
+    normalizeImageUrl(post.yoast_head_json?.og_image?.[0]?.url) ??
+    "/67.png"
+  );
 }
 
-async function fetchFromWordPress<T>(pathWithQuery: string): Promise<T> {
-  let lastError: unknown;
+export function removeDuplicateFeaturedImageFromContent(contentHtml: string, featuredImageUrl: string): string {
+  const sanitizedContent = sanitizeWordPressHtml(contentHtml);
+  const normalizedFeatured = normalizeImageUrl(featuredImageUrl);
 
-  for (const baseUrl of WORDPRESS_SITES) {
-    try {
-      const response = await fetch(`${baseUrl}${WORDPRESS_API_SUFFIX}${pathWithQuery}`, {
-        next: { revalidate: 300 },
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-
-      return (await response.json()) as T;
-    } catch (error) {
-      lastError = error;
-    }
+  if (!normalizedFeatured) {
+    return sanitizedContent;
   }
 
-  throw lastError instanceof Error ? lastError : new Error("Unable to fetch WordPress content");
+  const leadingImageMatch = sanitizedContent.match(
+    /^\s*(?:<p[^>]*>\s*)?<img[^>]*src=["']([^"']+)["'][^>]*>(?:\s*<\/p>)?\s*/i,
+  );
+
+  if (!leadingImageMatch?.[1]) {
+    return sanitizedContent;
+  }
+
+  const firstImageUrl = normalizeImageUrl(leadingImageMatch[1]);
+  if (!firstImageUrl) {
+    return sanitizedContent;
+  }
+
+  const isDuplicate =
+    canonicalizeBloggerImageUrl(firstImageUrl) === canonicalizeBloggerImageUrl(normalizedFeatured);
+
+  if (!isDuplicate) {
+    return sanitizedContent;
+  }
+
+  return sanitizedContent.replace(/^\s*(?:<p[^>]*>\s*)?<img[^>]*>(?:\s*<\/p>)?\s*/i, "");
+}
+
+async function fetchFromBlogger(pathWithQuery: string): Promise<BloggerFeedResponse> {
+  const response = await fetch(`${BLOGGER_BASE_URL}${BLOGGER_FEED_PATH}${pathWithQuery}`, {
+    next: { revalidate: 300 },
+    headers: { Accept: "application/json" },
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+
+  return (await response.json()) as BloggerFeedResponse;
 }
 
 export async function fetchWordPressPosts(search?: string, page = 1, perPage = 10): Promise<WordPressPost[]> {
+  const startIndex = (Math.max(page, 1) - 1) * perPage + 1;
   const params = new URLSearchParams({
-    per_page: String(perPage),
-    page: String(page),
-    orderby: "date",
-    order: "desc",
-    _embed: "true",
+    alt: "json",
+    "max-results": String(perPage),
+    "start-index": String(startIndex),
   });
 
   if (search && search.trim().length > 0) {
-    params.set("search", search.trim());
+    params.set("q", search.trim());
   }
 
-  return fetchFromWordPress<WordPressPost[]>(`/posts?${params.toString()}`);
+  const data = await fetchFromBlogger(`?${params.toString()}`);
+  const entries = data.feed?.entry ?? [];
+  return entries.map(mapEntryToPost).filter((post): post is WordPressPost => post !== null);
 }
 
 export async function fetchWordPressPostBySlug(slug: string): Promise<WordPressPost | null> {
-  const params = new URLSearchParams({
-    slug,
-    _embed: "true",
-  });
+  const params = new URLSearchParams({ alt: "json", "max-results": "150" });
+  const data = await fetchFromBlogger(`?${params.toString()}`);
+  const entries = data.feed?.entry ?? [];
 
-  const posts = await fetchFromWordPress<WordPressPost[]>(`/posts?${params.toString()}`);
-  return posts[0] ?? null;
+  for (const entry of entries) {
+    const mapped = mapEntryToPost(entry);
+    if (mapped?.slug === slug) {
+      return mapped;
+    }
+  }
+
+  return null;
 }
 
 export async function fetchAllWordPressPostSlugs(): Promise<Array<Pick<WordPressPost, "slug" | "modified">>> {
-  return fetchFromWordPress<Array<Pick<WordPressPost, "slug" | "modified">>>(
-    "/posts?per_page=100&orderby=date&order=desc&_fields=slug,modified",
-  );
+  const params = new URLSearchParams({ alt: "json", "max-results": "150" });
+  const data = await fetchFromBlogger(`?${params.toString()}`);
+  const entries = data.feed?.entry ?? [];
+
+  return entries
+    .map(mapEntryToPost)
+    .filter((post): post is WordPressPost => post !== null)
+    .map((post) => ({ slug: post.slug, modified: post.modified }));
 }
