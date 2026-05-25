@@ -6,6 +6,7 @@ import FooterSmall from "@/components/FooterSmall";
 import BlogNavigationButton from "@/components/BlogNavigationButton";
 import {
   fetchWordPressPostBySlug,
+  removeDuplicateFeaturedImageFromContent,
   resolvePostImage,
   sanitizeWordPressHtml,
   SITE_URL,
@@ -50,6 +51,9 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
     notFound();
   }
 
+  const featuredImage = resolvePostImage(post);
+  const cleanedContent = removeDuplicateFeaturedImageFromContent(post.content.rendered, featuredImage);
+
   return (
     <>
       <div className="bg-[#E5DFD5] rounded-b-[60px] pb-10">
@@ -72,13 +76,13 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
       <section className="px-6 xl:px-8 py-10 mx-auto max-w-[980px]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={resolvePostImage(post)}
+          src={featuredImage}
           alt={stripHtml(post.title.rendered)}
           className="w-full max-h-[480px] object-cover rounded-3xl"
         />
         <article
           className="wp-content mt-8 text-[#2f2f2f]"
-          dangerouslySetInnerHTML={{ __html: sanitizeWordPressHtml(post.content.rendered) }}
+          dangerouslySetInnerHTML={{ __html: cleanedContent }}
         />
       </section>
 

@@ -90,6 +90,10 @@ export function stripHtml(value: string): string {
   return decodeHtmlEntities(withoutTags);
 }
 
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function normalizeImageUrl(value?: string): string | null {
   if (!value) {
     return null;
@@ -110,6 +114,10 @@ function normalizeImageUrl(value?: string): string | null {
   }
 
   return null;
+}
+
+function upscaleBloggerImageUrl(value: string): string {
+  return value.replace(/\/s\d+(?:-[a-z])?(?=\/|$)/i, "/s1600");
 }
 
 function deriveSlugFromLink(value: string): string {
@@ -137,6 +145,8 @@ function mapEntryToPost(entry: BloggerEntry): WordPressPost | null {
   const content = entry.content?.$t ?? "";
   const summary = entry.summary?.$t ?? content;
 
+  const thumbnailUrl = normalizeImageUrl(entry["media$thumbnail"]?.url);
+
   return {
     id: parseBloggerId(entry.id?.$t),
     date: entry.published?.$t ?? new Date().toISOString(),
@@ -146,7 +156,7 @@ function mapEntryToPost(entry: BloggerEntry): WordPressPost | null {
     title: { rendered: entry.title?.$t ?? "Untitled" },
     content: { rendered: content },
     excerpt: { rendered: summary },
-    featuredImage: normalizeImageUrl(entry["media$thumbnail"]?.url),
+    featuredImage: thumbnailUrl ? upscaleBloggerImageUrl(thumbnailUrl) : null,
   };
 }
 
@@ -166,6 +176,23 @@ export function resolvePostImage(post: WordPressPost): string {
     normalizeImageUrl(post.yoast_head_json?.og_image?.[0]?.url) ??
     "/67.png"
   );
+}
+
+export function removeDuplicateFeaturedImageFromContent(contentHtml: string, featuredImageUrl: string): string {
+  const sanitizedContent = sanitizeWordPressHtml(contentHtml);
+  const normalizedFeatured = normalizeImageUrl(featuredImageUrl);
+
+  if (!normalizedFeatured) {
+    return sanitizedContent;
+  }
+
+  const escapedUrl = escapeRegExp(normalizedFeatured);
+  const leadingImagePattern = new RegExp(
+    `^\\s*(?:<p[^>]*>\\s*)?<img[^>]*src=[\\"']${escapedUrl}[\\"'][^>]*>(?:\\s*</p>)?\\s*`,
+    "i",
+  );
+
+  return sanitizedContent.replace(leadingImagePattern, "");
 }
 
 async function fetchFromBlogger(pathWithQuery: string): Promise<BloggerFeedResponse> {
