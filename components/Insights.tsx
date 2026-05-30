@@ -43,10 +43,10 @@ const stagger = {
                     </span>
                       <motion.span
                         variants={fadeUp}
-                        className="text-center md:text-left md:grid md:grid-cols-4">
+                        className="text-left md:text-left md:grid md:grid-cols-4 ml-auto md:ml-0">
                         <span></span>
-                        <span className="flex flex-col md:justify-start md:col-span-3 lg:col-span-3 ml-auto">
-                            <span>Articles that help you understand the mind, develop <br/> resilience, and live with clarity.</span>
+                        <span className="flex flex-col md:justify-start md:col-span-3 lg:col-span-3">
+                            <span>Articles that help you understand the mind,<br className="md:hidden block"/> develop <br className="md:block hidden"/> resilience, and live with clarity.</span>
                         </span>
                         <span></span>
                     </motion.span>

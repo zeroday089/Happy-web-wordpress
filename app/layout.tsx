@@ -1,15 +1,19 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Poppins } from "next/font/google";
 import "./globals.css";
-import Header from "@/components/Header";
-import { Poppins } from 'next/font/google';
 import Script from "next/script";
 import QueryProvider from "./providers/QueryProvider";
 import { Toaster } from "sonner";
+
 const poppins = Poppins({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'], 
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
+
+export const metadata: Metadata = {
+  title: "Happy Ho",
+  description: "Happy Ho",
+};
 
 export default function RootLayout({
   children,
@@ -18,13 +22,34 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={poppins.className}>
+      <head>
+        {/* Google Analytics */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-SV6NPQ1136"
+          strategy="afterInteractive"
+        />
 
- <QueryProvider>
-    <Script src="https://checkout.razorpay.com/v1/checkout.js" />
-        {children}
-                <Toaster richColors position="top-right" />
-          </QueryProvider>
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-SV6NPQ1136');
+          `}
+        </Script>
+      </head>
+
+      <body className={poppins.className}>
+        <QueryProvider>
+          <Script
+            src="https://checkout.razorpay.com/v1/checkout.js"
+            strategy="afterInteractive"
+          />
+
+          {children}
+
+          <Toaster richColors position="top-right" />
+        </QueryProvider>
       </body>
     </html>
   );

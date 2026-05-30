@@ -5,7 +5,7 @@ import Image from "next/image";
 import HappyImage from "@/public/Happy Ho_Website Design.svg";
 
 import { ChevronDown } from "lucide-react";
-
+import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -60,8 +60,7 @@ export default function Popup({
     expectedParticipation: "",
     goals: "",
     hearAbout: "",
-    agree: false,
-      showSessionFormat: false,
+    agree: false
   });
 
   if (!open) return null;
@@ -81,15 +80,74 @@ export default function Popup({
           ? (e.target as HTMLInputElement).checked
           : value,
     });
-  };
-const handleSubmit = async (
+  };const handleSubmit = async (
   e: React.FormEvent<HTMLFormElement>
 ) => {
-
   e.preventDefault();
 
-  try {
+  // Required fields validation
+  if (
+    !formData.fullName.trim() ||
+    !formData.designation.trim() ||
+    !formData.companyName.trim() ||
+    !formData.companyEmail.trim() ||
+    !formData.workEmail.trim() ||
+    !formData.contactNumber.trim() ||
+    !formData.city.trim() ||
+    !formData.organizationType ||
+    !formData.workshopType ||
+    !formData.expectedParticipation.trim()
+  ) {
+    toast.error("Please fill all required fields");
+    return;
+  }
 
+  // Email validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  if (!emailRegex.test(formData.companyEmail)) {
+    toast.error("Please enter a valid Company Email");
+    return;
+  }
+
+  if (!emailRegex.test(formData.workEmail)) {
+    toast.error("Please enter a valid Work Email");
+    return;
+  }
+
+  // Phone validation (Indian mobile number)
+  const phone = formData.contactNumber.replace(/\D/g, "");
+
+  if (!/^[1-9]\d{9}$/.test(phone)) {
+    toast.error("Please enter a valid 10-digit mobile number");
+    return;
+  }
+
+  // Expected Participation validation
+  if (
+    isNaN(Number(formData.expectedParticipation)) ||
+    Number(formData.expectedParticipation) <= 0
+  ) {
+    toast.error("Expected Participation must be a valid number");
+    return;
+  }
+
+  // Session format required when Other is selected
+  if (
+    formData.workshopType === "Other (Please Specify)" &&
+    !formData.sessionFormat
+  ) {
+    toast.error("Please select a Preferred Session Format");
+    return;
+  }
+
+  // Agreement checkbox validation
+  if (!formData.agree) {
+    toast.error("Please agree to be contacted");
+    return;
+  }
+
+  try {
     setLoading(true);
 
     const payload: Record<string, string> = {
@@ -98,7 +156,7 @@ const handleSubmit = async (
       Company_Name: formData.companyName,
       Company_Email: formData.companyEmail,
       Work_Email: formData.workEmail,
-      Contact_Number: formData.contactNumber,
+      Contact_Number: phone,
       City: formData.city,
       Organization_Type: formData.organizationType,
       Workshop_Type: formData.workshopType,
@@ -109,8 +167,7 @@ const handleSubmit = async (
       Agree_To_Contact: formData.agree ? "Yes" : "No",
     };
 
-    // Only send Session_Format if checkbox is checked
-    if (formData.showSessionFormat) {
+    if (formData.workshopType === "Other (Please Specify)") {
       payload.Session_Format = formData.sessionFormat;
     }
 
@@ -129,8 +186,7 @@ const handleSubmit = async (
     const data = await response.json();
 
     if (data.success) {
-
-      alert("Form submitted successfully!");
+      toast.success("Form submitted successfully!");
 
       localStorage.setItem("fillthepopup", "true");
 
@@ -150,26 +206,17 @@ const handleSubmit = async (
         goals: "",
         hearAbout: "",
         agree: false,
-        showSessionFormat: false,
       });
 
       onClose();
-
     } else {
-
-      alert("Failed to submit form");
-
+      toast.error("Failed to submit form");
     }
-
   } catch (error) {
-
-    console.log(error);
-    alert("Something went wrong");
-
+    console.error(error);
+    toast.error("Something went wrong");
   } finally {
-
     setLoading(false);
-
   }
 };
 
@@ -329,6 +376,7 @@ const handleSubmit = async (
                     "Mindfulness & Focus",
                     "Leadership Wellbeing",
                     "Team Bonding & Communication",
+                    "Other (Please Specify)"
                   ].map((item) => (
                     <Radio
                       key={item}
@@ -342,29 +390,16 @@ const handleSubmit = async (
                 </div>
               </div>
 
-      {/* Other */}
+{/* Other */}
 <div className="pt-2">
+  <span className="text-sm font-semibold text-[#444]">
+    Other (Please Specify)
+  </span>
 
-  <label className="flex items-center gap-3">
-
-    <input
-      type="checkbox"
-      name="showSessionFormat"
-      checked={formData.showSessionFormat}
-      onChange={handleChange}
-      className="h-3 w-3 cursor-pointer appearance-none rounded-full border-2 border-black checked:bg-[#315a4d] checked:border-[#315a4d] relative"
-    />
-
-    <span className="text-sm font-semibold text-[#444]">
-      Other (Please Specify)
-    </span>
-
-  </label>
-
+  <hr className="mt-2 border-1 border-black" />
 </div>
               {/* Session Format */}
-              {/* Session Format */}
-{formData.showSessionFormat && (
+{formData.workshopType === "Other (Please Specify)" && (
   <div>
 
     <label className="block text-sm font-semibold text-[#444] mb-3">

@@ -35,12 +35,12 @@ function buildHref(query: string, page: number): string {
 
 function FeaturedCard({ post, compact = false }: { post: WordPressPost; compact?: boolean }) {
   return (
-    <article className={`rounded-3xl overflow-hidden bg-[#e9e1d6] text-[#978059] ${compact ? "" : "h-full"}`}>
+    <article className={`rounded-3xl overflow-hidden bg-[#e9e1d6] text-[#978059]`}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={resolvePostImage(post)}
         alt={stripHtml(post.title.rendered) || "Article image"}
-        className={`w-full object-cover ${compact ? "h-[180px]" : "h-[250px]"}`}
+        className={`w-full object-cover ${compact ? "h-[180px]" : "h-[180px]"}`}
       />
       <div className="p-4 md:p-5 space-y-3">
         <h3 className="text-sm md:text-xl" dangerouslySetInnerHTML={{ __html: sanitizeWordPressHtml(post.title.rendered) }} />

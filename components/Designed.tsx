@@ -248,7 +248,7 @@ const handleScroll = () => {
                     whileInView={{ scale: 1 }}
                     transition={{ duration: 0.4 }}
               className="flex justify-end">
-                <Image src="/6.png" alt="" width={200} height={200} />
+                <Image src="/5000.png" alt="" width={125} height={200} />
               </motion.div>
 
               <div className="flex flex-col gap-4 text-[#e9dac9] mt-4">
