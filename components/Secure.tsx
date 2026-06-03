@@ -40,7 +40,7 @@ const fadeUp = {
 
 const services = [
   { name: "Tarot Guidance",     detail: "30 mins • ₹3,000",  img: "/Happy Ho_Payments_Tarot Guidance.svg",       hasSessionSelect: false, guides: ["Jwalant S.", "Nona", "Saachi A.", "Monika S."], sessions: [] },
-  { name: "Energy Healing",     detail: "45 mins • ₹7,500", img: "/Happy Ho_Payments_Energy Healing.svg",       hasSessionSelect: false, guides: ["Pooja", "Nona", "Monika"],                      sessions: [] },
+  { name: "Energy Healing",     detail: "45 mins • ₹7,500", img: "/Happy Ho_Payments_Energy Healing.svg",       hasSessionSelect: false, guides: ["Pooja", "Nona", "Monika","Pritpal"],                      sessions: [] },
   { name: "Astrology",          detail: "30 mins • ₹4,500",  img: "/Happy Ho_Payments_Astrology.svg",            hasSessionSelect: false, guides: ["Monika"],                                       sessions: [] },
   { name: "Numerology",         detail: "₹7,500",           img: "/Happy Ho_Payments_Numerology.svg",           hasSessionSelect: false, guides: ["Saachi A."],                                    sessions: [] },
   { name: "Name Correction",    detail: "₹15,000",           img: "/Happy Ho_Payments_Name Correction.svg",      hasSessionSelect: false, guides: ["Saachi A."],                                    sessions: [] },

@@ -120,28 +120,57 @@ export default function Footer() {
                 NOIDA, Uttar Pradesh, India (Bharat)
               </span>
             </motion.div>
-            <motion.div className="grid grid-cols-1 md:grid-cols-2 text-[#544120] xl:grid-cols-2 md:gap-15 lg:gap-30" variants={fadeUp}>
+            <motion.div className="grid grid-cols-1 md:grid-cols-3 text-[#544120] xl:grid-cols-2 md:gap-15 lg:gap-30" variants={fadeUp}>
               <div className="flex flex-col text-[13px] lg:text-lg">
                 <span>Mobile: (+91) 9811237999</span>
                 <span>Email: info@happyho.in</span>
               </div>
-              <div className="flex gap-3 mt-5 md:mt-0 md:ml-auto items-center">
-              {[
-                { src: "/200.png", label: "FaceBook" },
-                { src: "/201.png", label: "Instagram" },
-                { src: "/202.png", label: "Twitter" },
-                { src: "/203.png", label: "YouTube" },
-              ].map((item, i) => (
-                <Image
-                  key={i}
-                  src={item.src}
-                  alt={item.label}
-                  width={100}
-                  height={60}
-                  className="w-6 h-6 md:w-12 md:h-12 lg:w-15 lg:h-15 object-contain"
-                />
-              ))}
-            </div>
+              <div className="md:col-span-2 flex flex-col items-start md:items-end gap-4 mt-5 md:mt-0 md:ml-auto">
+  <div className="flex gap-3 items-center">
+    {[
+      { src: "/200.png", label: "FaceBook" },
+      { src: "/201.png", label: "Instagram" },
+      { src: "/202.png", label: "Twitter" },
+      { src: "/203.png", label: "YouTube" },
+    ].map((item, i) => (
+      <Image
+        key={i}
+        src={item.src}
+        alt={item.label}
+        width={100}
+        height={60}
+        className="w-6 h-6 md:w-12 md:h-12 lg:w-15 lg:h-15 object-contain"
+      />
+    ))}
+  </div>
+
+  <div className="flex flex-wrap justify-start md:justify-end gap-3 text-xs md:text-sm text-[#544120]">
+    <Link
+      href="/privacy-policy"
+      className="hover:underline transition-all"
+    >
+      Privacy Policy
+    </Link>
+
+    <span>|</span>
+
+    <Link
+      href="/refund-policy"
+      className="hover:underline transition-all"
+    >
+      Refund Policy
+    </Link>
+
+    <span>|</span>
+
+    <Link
+      href="/terms-condition"
+      className="hover:underline transition-all"
+    >
+      Terms & Conditions
+    </Link>
+  </div>
+</div>
             </motion.div>
           </div>
         </motion.div>

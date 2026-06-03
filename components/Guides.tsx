@@ -76,20 +76,17 @@ Ethics-based Corporate Culture"
           <motion.div variants={fadeUp} className="flex md:flex-col gap-2 md:gap-3">
             <motion.div whileHover={{ scale: 1.05 }}>
                  <GuideCardlarge
-  src="/43.png"
-  title="Saumya Sharma"
-  desc="Emotional Freedom Techniques (EFT) +
-Matrix Reimprinting +
-Family Constellation +
-Somatic Experiencing"
+  src="/guid4.jpeg"
+  title="Nonah Khanna"
+  desc="Career & Health Tarot + Reiki + Aura Cleaning + Chakra balancing + Sujok + 25 other modalities"
 />
 
             </motion.div>
             <motion.div whileHover={{ scale: 1.05 }}>
                          <GuideCard
-    src="/guid4.jpeg"
-  title="Nonah Khanna"
-  desc="Career & Health Tarot + Reiki + Aura Cleaning + Chakra balancing + Sujok + 25 other modalities"
+    src="/pritpal.png"
+  title="Pritpal Kaur"
+  desc="Akashic Reading"
 />
             </motion.div>
           </motion.div>
@@ -195,14 +192,13 @@ Ethics-based Corporate Culture"
 />
             </motion.div>
              <motion.div whileHover={{ scale: 1.05 }}>
-                <GuideCard
-  src="/43.png"
-  title="Saumya Sharma"
-  desc="Emotional Freedom Techniques (EFT) +
-Matrix Reimprinting +
-Family Constellation +
-Somatic Experiencing"
+                          <motion.div whileHover={{ scale: 1.05 }}>
+                         <GuideCard
+    src="/pritpal.png"
+  title="Pritpal Kaur"
+  desc="Akashic Reading"
 />
+            </motion.div>
             </motion.div>
               <motion.div whileHover={{ scale: 1.05 }}>
                <GuideCard

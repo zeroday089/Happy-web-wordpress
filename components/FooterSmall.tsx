@@ -104,23 +104,50 @@ export default function FooterSmall() {
             <span>Mobile: (+91) 9811237999</span>
             <span>Email: info@happyho.in</span>
           </div>
-          <div className="flex gap-3 mt-5 lg:mt-0 lg:ml-auto items-center">
-                      {[
-                        { src: "/200.png", label: "FaceBook" },
-                        { src: "/201.png", label: "Instagram" },
-                        { src: "/202.png", label: "Twitter" },
-                        { src: "/203.png", label: "YouTube" },
-                      ].map((item, i) => (
-                        <Image
-                          key={i}
-                          src={item.src}
-                          alt={item.label}
-                          width={100}
-                          height={60}
-                          className="w-10 h-10 lg:w-18 lg:h-18 object-contain"
-                        />
-                      ))}
-                    </div>
+     <div className="flex flex-col gap-4 mt-5 lg:mt-0 lg:ml-auto">
+  {/* Social Icons */}
+  <div className="flex gap-3 items-center">
+    {[
+      { src: "/200.png", label: "FaceBook" },
+      { src: "/201.png", label: "Instagram" },
+      { src: "/202.png", label: "Twitter" },
+      { src: "/203.png", label: "YouTube" },
+    ].map((item, i) => (
+      <Image
+        key={i}
+        src={item.src}
+        alt={item.label}
+        width={100}
+        height={60}
+        className="w-10 h-10 lg:w-18 lg:h-18 object-contain"
+      />
+    ))}
+  </div>
+
+  {/* Policy Links */}
+  <div className="grid grid-cols-2 text-[#544120] text-sm md:text-sm gap-1">
+    <Link
+      href="/privacy-policy"
+      className="hover:underline cursor-pointer"
+    >
+      Privacy Policy
+    </Link>
+
+    <Link
+      href="/refund-policy"
+      className="hover:underline cursor-pointer"
+    >
+      Refund Policy
+    </Link>
+
+    <Link
+      href="/terms-condition"
+      className="hover:underline cursor-pointer"
+    >
+      Terms & Conditions
+    </Link>
+  </div>
+</div>
         </motion.div>
       </div>
     </motion.div>
