@@ -13,7 +13,6 @@ export interface Booking {
   updatedAt: string;
 }
 
-
 export interface Booking {
   _id: string;
   fullName: string;
@@ -36,7 +35,6 @@ export interface Booking {
   } | null;
 }
 
-
 export interface BookingFormData {
   fullName: string;
   email: string;
@@ -45,7 +43,7 @@ export interface BookingFormData {
   selectedService: string;
   selectedGuide: string;
   sessionType: "online" | "offline" | "";
-  preferredDateTime: string;
+  // preferredDateTime: string;
   concern: string;
 }
 

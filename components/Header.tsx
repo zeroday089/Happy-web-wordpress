@@ -25,15 +25,15 @@ export default function Header() {
   }, []);
 
   useEffect(() => {
-  const handleResize = () => {
-    if (window.innerWidth >= 768) { // 768px = Tailwind's md breakpoint
-      setOpen(false);
-    }
-  };
+    const handleResize = () => {
+      if (window.innerWidth >= 768) { // 768px = Tailwind's md breakpoint
+        setOpen(false);
+      }
+    };
 
-  window.addEventListener("resize", handleResize);
-  return () => window.removeEventListener("resize", handleResize);
-}, []);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
   // Close dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -47,84 +47,84 @@ export default function Header() {
 
   return (
     <div className="pt-12 px-4 xl:p-8 z-50 mx-auto max-w-[1920px]">
-      
+
       <div className="bg-[#dcd8ce] rounded-full flex md:grid md:grid-cols-4 lg:grid-cols-5 items-center shadow-xl">
 
         {/* LOGO */}
-  <Link href="/">
-    <Image
-      src="/footerImage.png"
-      alt="logo"
-      width={70}
-      height={70}
-      className="w-13 h-13 md:w-15 md:h-15 xl:w-20 xl:h-20 cursor-pointer"
-    />
-  </Link>
+        <Link href="/">
+          <Image
+            src="/footerImage.png"
+            alt="logo"
+            width={70}
+            height={70}
+            className="w-13 h-13 md:w-15 md:h-15 xl:w-20 xl:h-20 cursor-pointer"
+          />
+        </Link>
 
 
 
         {/* NAV LINKS (desktop only) */}
         <div className="col-span-2 lg:col-span-3 hidden md:flex gap-6 lg:gap-10 items-center justify-center text-sm lg:text-xl">
+          <Link href="/" className="cursor-pointer">Home</Link>
           <Link href="/AboutUs" className="cursor-pointer">About Us</Link>
           <Link href="/Programs" className="cursor-pointer">Programs</Link>
           <Link href="/Corporate" className="cursor-pointer">Corporate</Link>
           <div className="relative" ref={dropdownRef}>
-  <div className="flex items-center gap-1">
-    
-    {/* Navigate to /Resources */}
-    <Link href="/Resources" className="cursor-pointer">
-      Resources
-    </Link>
+            <div className="flex items-center gap-1">
 
-    {/* Only arrow toggles dropdown */}
-    <button
-      onClick={() => setOpened(prev => !prev)}
-      className="cursor-pointer"
-    >
-     <span
-  className={`inline-block text-xs transform transition-transform duration-200 ${
-    opened ? "rotate-180" : "rotate-0"
-  }`}
->
-  ▼
-</span>
-    </button>
-  </div>
+              {/* Navigate to /Resources */}
+              <Link href="/Resources" className="cursor-pointer">
+                Resources
+              </Link>
 
-  {opened && (
-    <div className="absolute top-full mt-3 bg-white shadow-lg rounded-lg py-2 w-[160px] lg:w-[180px] z-50">
-      <Link
-        href="/Resources"
-        className="block px-4 py-2 hover:bg-gray-100"
-        onClick={() => setOpened(false)}
-      >
-        Blog
-      </Link>
+              {/* Only arrow toggles dropdown */}
+              <button
+                onClick={() => setOpened(prev => !prev)}
+                className="cursor-pointer"
+              >
+                <span
+                  className={`inline-block text-xs transform transition-transform duration-200 ${opened ? "rotate-180" : "rotate-0"
+                    }`}
+                >
+                  ▼
+                </span>
+              </button>
+            </div>
 
-      <Link
-        href="/videos"
-        className="block px-4 py-2 hover:bg-gray-100"
-        onClick={() => setOpened(false)}
-      >
-        Videos / Reels
-      </Link>
-    </div>
-  )}
-</div>
+            {opened && (
+              <div className="absolute top-full mt-3 bg-white shadow-lg rounded-lg py-2 w-[160px] lg:w-[180px] z-50">
+                <Link
+                  href="/Resources"
+                  className="block px-4 py-2 hover:bg-gray-100"
+                  onClick={() => setOpened(false)}
+                >
+                  Blog
+                </Link>
+
+                <Link
+                  href="/videos"
+                  className="block px-4 py-2 hover:bg-gray-100"
+                  onClick={() => setOpened(false)}
+                >
+                  Videos / Reels
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* RIGHT SIDE */}
         <div className="ml-auto flex items-center pr-2">
 
           {/* DESKTOP BUTTON */}
-            <Link href="/Payment" className="cursor-pointer">
-          <Button className="hidden md:flex items-center justify-center bg-[#3f5c4a] hover:bg-[#162d22] cursor-pointer rounded-full text-sm lg:text-lg xl:text-xl px-4 md:py-6 xl:px-8 xl:py-8">
-            
-      Book Your Session
+          <Link href="/Payment" className="cursor-pointer">
+            <Button className="hidden md:flex items-center justify-center bg-[#3f5c4a] hover:bg-[#162d22] cursor-pointer rounded-full text-sm lg:text-lg xl:text-xl px-4 md:py-6 xl:px-8 xl:py-8">
+
+              Book Your Session
 
 
-</Button>
-    </Link>
+            </Button>
+          </Link>
 
           {/* MOBILE MENU ICON */}
           <button
@@ -136,85 +136,84 @@ export default function Header() {
         </div>
       </div>
 
-     <AnimatePresence>
-  {open && (
-    <motion.div
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      transition={{ duration: 0.3 }}
-className="fixed inset-0 bg-[#dcd8ce] z-40 flex flex-col items-start justify-center px-8 gap-8 text-2xl"
-    >
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 bg-[#dcd8ce] z-40 flex flex-col items-start justify-center px-8 gap-8 text-2xl"
+          >
 
-      {/* ❌ CLOSE BUTTON (TOP RIGHT) */}
-      <button
-        onClick={() => setOpen(false)}
-        className="absolute top-6 right-6 p-2"
-      >
-        <X size={28} />
-      </button>
+            {/* ❌ CLOSE BUTTON (TOP RIGHT) */}
+            <button
+              onClick={() => setOpen(false)}
+              className="absolute top-6 right-6 p-2"
+            >
+              <X size={28} />
+            </button>
 
-      {/* MENU LINKS */}
-      <Link href="/" onClick={() => setOpen(false)}>Home</Link>
-      <Link href="/AboutUs" onClick={() => setOpen(false)}>About Us</Link>
-      <Link href="/Programs" onClick={() => setOpen(false)}>Programs</Link>
-      <Link href="/Corporate" onClick={() => setOpen(false)}>Corporate</Link>
-   <div className="relative" ref={dropdownRefsmall}>
-  <div className="flex items-center gap-1">
-    
-    {/* Navigate to /Resources */}
-    <Link href="/Resources" className="cursor-pointer">
-      Resources
-    </Link>
+            {/* MENU LINKS */}
+            <Link href="/" onClick={() => setOpen(false)}>Home</Link>
+            <Link href="/AboutUs" onClick={() => setOpen(false)}>About Us</Link>
+            <Link href="/Programs" onClick={() => setOpen(false)}>Programs</Link>
+            <Link href="/Corporate" onClick={() => setOpen(false)}>Corporate</Link>
+            <div className="relative" ref={dropdownRefsmall}>
+              <div className="flex items-center gap-1">
 
-    {/* Only arrow toggles dropdown */}
-    <button
-      onClick={() => setOpenedsmall(prev => !prev)}
-      className="cursor-pointer"
-    >
-     <span
-  className={`inline-block text-xs transform transition-transform duration-200 ${
-    opened ? "rotate-180" : "rotate-0"
-  }`}
->
-  ▼
-</span>
-    </button>
-  </div>
+                {/* Navigate to /Resources */}
+                <Link href="/Resources" className="cursor-pointer">
+                  Resources
+                </Link>
 
-  {openedsmall && (
-    <div className="absolute top-full mt-3 bg-white shadow-lg rounded-lg py-2 w-[160px] lg:w-[180px] z-50">
-      <Link
-        href="/Resources"
-        className="block px-4 py-2 hover:bg-gray-100 text-sm"
-        onClick={() => setOpenedsmall(false)}
-      >
-        Blog
-      </Link>
+                {/* Only arrow toggles dropdown */}
+                <button
+                  onClick={() => setOpenedsmall(prev => !prev)}
+                  className="cursor-pointer"
+                >
+                  <span
+                    className={`inline-block text-xs transform transition-transform duration-200 ${opened ? "rotate-180" : "rotate-0"
+                      }`}
+                  >
+                    ▼
+                  </span>
+                </button>
+              </div>
 
-      <Link
-        href="/videos"
-        className="block px-4 py-2 hover:bg-gray-100 text-sm"
-        onClick={() => setOpenedsmall(false)}
-      >
-        Videos / Reels
-      </Link>
-    </div>
-  )}
-</div>
+              {openedsmall && (
+                <div className="absolute top-full mt-3 bg-white shadow-lg rounded-lg py-2 w-[160px] lg:w-[180px] z-50">
+                  <Link
+                    href="/Resources"
+                    className="block px-4 py-2 hover:bg-gray-100 text-sm"
+                    onClick={() => setOpenedsmall(false)}
+                  >
+                    Blog
+                  </Link>
 
-      {/* CTA */}
-         <Link href="/Payment" className="cursor-pointer">
-      <Button className="bg-[#3f5c4a] text-white px-8 py-6 rounded-full">
-     
-      Book Your Session
+                  <Link
+                    href="/videos"
+                    className="block px-4 py-2 hover:bg-gray-100 text-sm"
+                    onClick={() => setOpenedsmall(false)}
+                  >
+                    Videos / Reels
+                  </Link>
+                </div>
+              )}
+            </div>
 
-      </Button>
-          </Link>
+            {/* CTA */}
+            <Link href="/Payment" className="cursor-pointer">
+              <Button className="bg-[#3f5c4a] text-white px-8 py-6 rounded-full">
 
-    </motion.div>
-  )}
-</AnimatePresence>
+                Book Your Session
+
+              </Button>
+            </Link>
+
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -1,22 +1,66 @@
 "use client";
 
-import { useState ,useRef,useEffect} from "react";
-  import { motion } from "framer-motion";
-  import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-} from "@/components/ui/dropdown-menu";
-import { ChevronDown } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { motion } from "framer-motion";
 import axios from "axios";
 import { BookingDetailsFormProps, BookingFormData, meditationSessionPricing, servicePricing, vastuSessionPricing } from "@/type/api";
 import { toast } from "sonner";
+import { SlotSelector } from "./Calendly";
+import { getCalendlyUrl } from "@/constants/calendlyUrls";
 
-export default function BookingDetailsForm({ guide, serviceName,session }: BookingDetailsFormProps) {
+export default function BookingDetailsForm({ guide, serviceName, session }: BookingDetailsFormProps) {
 
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [amount, setAmount] = useState<number>(0);
+  const [showCalendly, setShowCalendly] = useState(false);
+  const [paidBookingId, setPaidBookingId] = useState<string | null>(null);
+  const [slotBooked, setSlotBooked] = useState(false);
+
+  // Look up the Calendly URL for this guide + service
+  const calendlyUrl = getCalendlyUrl(guide, serviceName);
+
+  // Listen for Calendly event_scheduled postMessage
+  useEffect(() => {
+    const handleCalendlyEvent = async (e: MessageEvent) => {
+      // Debug: log all Calendly messages
+      if (e.data?.event?.startsWith?.("calendly")) {
+        console.log("Calendly event received:", e.data.event);
+        console.log("Calendly payload:", JSON.stringify(e.data.payload, null, 2));
+      }
+
+      if (e.data?.event === "calendly.event_scheduled" && paidBookingId) {
+        const eventUri = e.data.payload?.event?.uri;
+        const inviteeUri = e.data.payload?.invitee?.uri;
+
+        toast.success("Slot booked successfully!");
+        setShowCalendly(false);
+        setSlotBooked(true);
+
+        // Update the booking in the backend with the Calendly event URI
+        // The backend will use this URI to fetch the actual event start_time if needed
+        try {
+          console.log("eventUri", eventUri);
+          console.log("inviteeUri", inviteeUri);
+          console.log("paidBookingId", paidBookingId);
+          await axios.post(
+            `${process.env.NEXT_PUBLIC_API_URL}/payment/update-booking-slot`,
+            {
+              bookingId: paidBookingId,
+              calendlyEventUri: eventUri,
+              calendlyInviteeUri: inviteeUri,
+            }
+          );
+          console.log("Booking slot updated successfully");
+        } catch (err) {
+          console.error("Failed to update booking slot:", err);
+        }
+      }
+    };
+
+    window.addEventListener("message", handleCalendlyEvent);
+    return () => window.removeEventListener("message", handleCalendlyEvent);
+  }, [paidBookingId]);
+
   const container = {
     hidden: {},
     show: {
@@ -31,7 +75,7 @@ export default function BookingDetailsForm({ guide, serviceName,session }: Booki
     show: {
       opacity: 1,
       y: 0,
-      transition: { duration: 0.4, ease: "easeOut"  as const},
+      transition: { duration: 0.4, ease: "easeOut" as const },
     },
   };
   const [form, setForm] = useState<BookingFormData>({
@@ -39,11 +83,11 @@ export default function BookingDetailsForm({ guide, serviceName,session }: Booki
     email: "",
     countryCode: "+91",
     phone: "",
-   selectedService: serviceName,  // ← pre-filled
-    selectedGuide: guide, 
+    selectedService: serviceName,  // ← pre-filled
+    selectedGuide: guide,
     sessionType: "",
-    preferredDateTime: "",
     concern: "",
+    // preferredDateTime: "",
   });
 
   const handleChange = (
@@ -52,254 +96,256 @@ export default function BookingDetailsForm({ guide, serviceName,session }: Booki
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-const paymentRef = useRef<HTMLDivElement>(null);const handleCreateOrder = async (
-  e: React.FormEvent
-) => {
-  e.preventDefault();
+  const paymentRef = useRef<HTMLDivElement>(null); const handleCreateOrder = async (
+    e: React.FormEvent
+  ) => {
+    e.preventDefault();
 
-  // =========================
-  // VALIDATION
-  // =========================
-
-  if (!form.fullName.trim()) {
-    toast.error("Please enter full name");
-    return;
-  }
-
-  if (!form.email.trim()) {
-    toast.error("Please enter email");
-    return;
-  }
-
-  if (!form.phone.trim()) {
-    toast.error("Please enter phone number");
-    return;
-  }
-
-  if (!form.sessionType) {
-    toast.error("Please select session type");
-    return;
-  }
-
-  // =========================
-  // PAYLOAD
-  // =========================
-
-  const payload = {
-    fullName: form.fullName,
-
-    email: form.email,
-
-    phoneNumber:
-      form.countryCode + form.phone,
-
-    selectedService: serviceName,
-
-    selectedGuide: guide,
-
-    sessionType:
-      form.sessionType === "online"
-        ? "Online"
-        : "Offline",
-
-    preferredDateTime:
-      form.preferredDateTime,
-
-    concernArea: form.concern,
-
-    ...(session && { session }),
-  };
-
-  try {
     // =========================
-    // CREATE ORDER
+    // VALIDATION
     // =========================
 
-    const response = await axios.post(
-      `${process.env.NEXT_PUBLIC_API_URL}/payment/create-order`,
-      { payload }
-    );
-
-    console.log(
-      "CREATE ORDER RESPONSE:",
-      response.data
-    );
-
-    if (!response.data.success) {
-      toast.error(
-        "Payment initiation failed"
-      );
+    if (!form.fullName.trim()) {
+      toast.error("Please enter full name");
       return;
     }
 
-    // FIXED HERE
-    const paymentData =
-      response.data.data;
+    if (!form.email.trim()) {
+      toast.error("Please enter email");
+      return;
+    }
 
-    // =========================
-    // CHECK RAZORPAY SDK
-    // =========================
+    if (!form.phone.trim()) {
+      toast.error("Please enter phone number");
+      return;
+    }
 
-    if (!(window as any).Razorpay) {
-      toast.error(
-        "Razorpay SDK failed to load"
-      );
+    if (!form.sessionType) {
+      toast.error("Please select session type");
       return;
     }
 
     // =========================
-    // RAZORPAY OPTIONS
+    // PAYLOAD
     // =========================
 
-    const options = {
-      key: paymentData.key,
+    const payload = {
+      fullName: form.fullName,
 
-      amount: paymentData.amount,
+      email: form.email,
 
-      currency: paymentData.currency,
+      phoneNumber:
+        form.countryCode + form.phone,
 
-      name: "Your Business Name",
+      selectedService: serviceName,
 
-      description: "Booking Payment",
+      selectedGuide: guide,
 
-      order_id: paymentData.orderId,
+      sessionType:
+        form.sessionType === "online"
+          ? "Online"
+          : "Offline",
 
-      prefill: {
-        name: form.fullName,
+      // preferredDateTime:
+      //   form.preferredDateTime,
 
-        email: form.email,
+      concernArea: form.concern,
 
-        contact:
-          form.countryCode + form.phone,
-      },
+      ...(session && { session }),
+    };
 
-      theme: {
-        color: "#6366f1",
-      },
+    try {
+      // =========================
+      // CREATE ORDER
+      // =========================
+
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/payment/create-order`,
+        { payload }
+      );
+
+      console.log(
+        "CREATE ORDER RESPONSE:",
+        response.data
+      );
+
+      if (!response.data.success) {
+        toast.error(
+          "Payment initiation failed"
+        );
+        return;
+      }
+
+      // FIXED HERE
+      const paymentData =
+        response.data.data;
 
       // =========================
-      // PAYMENT SUCCESS
+      // CHECK RAZORPAY SDK
       // =========================
 
-      handler: async (
-        razorpayResponse: {
-          razorpay_order_id: string;
-          razorpay_payment_id: string;
-          razorpay_signature: string;
-        }
-      ) => {
-        try {
-          console.log(
-            "PAYMENT SUCCESS:",
-            razorpayResponse
-          );
+      if (!(window as any).Razorpay) {
+        toast.error(
+          "Razorpay SDK failed to load"
+        );
+        return;
+      }
 
-          // =========================
-          // VERIFY PAYMENT
-          // =========================
+      // =========================
+      // RAZORPAY OPTIONS
+      // =========================
 
-          const verifyResponse =
-            await axios.post(
-              `${process.env.NEXT_PUBLIC_API_URL}/payment/verify`,
-              {
-                razorpay_order_id:
-                  razorpayResponse.razorpay_order_id,
+      const options = {
+        key: paymentData.key,
 
-                razorpay_payment_id:
-                  razorpayResponse.razorpay_payment_id,
+        amount: paymentData.amount,
 
-                razorpay_signature:
-                  razorpayResponse.razorpay_signature,
+        currency: paymentData.currency,
+
+        name: "Your Business Name",
+
+        description: "Booking Payment",
+
+        order_id: paymentData.orderId,
+
+        prefill: {
+          name: form.fullName,
+
+          email: form.email,
+
+          contact:
+            form.countryCode + form.phone,
+        },
+
+        theme: {
+          color: "#6366f1",
+        },
+
+        // =========================
+        // PAYMENT SUCCESS
+        // =========================
+
+        handler: async (
+          razorpayResponse: {
+            razorpay_order_id: string;
+            razorpay_payment_id: string;
+            razorpay_signature: string;
+          }
+        ) => {
+          try {
+            console.log(
+              "PAYMENT SUCCESS:",
+              razorpayResponse
+            );
+
+            // =========================
+            // VERIFY PAYMENT
+            // =========================
+
+            const verifyResponse =
+              await axios.post(
+                `${process.env.NEXT_PUBLIC_API_URL}/payment/verify`,
+                {
+                  razorpay_order_id:
+                    razorpayResponse.razorpay_order_id,
+
+                  razorpay_payment_id:
+                    razorpayResponse.razorpay_payment_id,
+
+                  razorpay_signature:
+                    razorpayResponse.razorpay_signature,
+                }
+              );
+
+            console.log(
+              "VERIFY RESPONSE:",
+              verifyResponse.data
+            );
+
+            if (
+              verifyResponse.data.success
+            ) {
+              toast.success("Payment successful! Please Wait to Select Slot");
+              setPaidBookingId(paymentData.bookingId);
+              if (calendlyUrl) {
+                setShowCalendly(true);
               }
+            } else {
+              toast.error(
+                "Payment verification failed"
+              );
+            }
+          } catch (error) {
+            console.error(
+              "Verification Error:",
+              error
             );
 
-          console.log(
-            "VERIFY RESPONSE:",
-            verifyResponse.data
-          );
-
-          if (
-            verifyResponse.data.success
-          ) {
-            toast.success(
-              "Payment successful 🎉"
-            );
-          } else {
             toast.error(
-              "Payment verification failed"
+              "Something went wrong during payment verification."
             );
           }
-        } catch (error) {
+        },
+
+        // =========================
+        // PAYMENT FAILED
+        // =========================
+
+        modal: {
+          ondismiss: () => {
+            console.log(
+              "Payment popup closed"
+            );
+
+            toast.info(
+              "Payment cancelled"
+            );
+          },
+        },
+      };
+
+      console.log(
+        "RAZORPAY OPTIONS:",
+        options
+      );
+
+      // =========================
+      // OPEN RAZORPAY
+      // =========================
+
+      const rzp = new (
+        window as any
+      ).Razorpay(options);
+
+      rzp.on(
+        "payment.failed",
+        (response: any) => {
           console.error(
-            "Verification Error:",
-            error
+            "Payment Failed:",
+            response
           );
 
           toast.error(
-            "Something went wrong during payment verification."
+            response.error.description ||
+            "Payment failed"
           );
         }
-      },
+      );
 
-      // =========================
-      // PAYMENT FAILED
-      // =========================
+      rzp.open();
+    } catch (error: any) {
+      console.error(
+        "Create Order Error:",
+        error
+      );
 
-      modal: {
-        ondismiss: () => {
-          console.log(
-            "Payment popup closed"
-          );
-
-          toast.info(
-            "Payment cancelled"
-          );
-        },
-      },
-    };
-
-    console.log(
-      "RAZORPAY OPTIONS:",
-      options
-    );
-
-    // =========================
-    // OPEN RAZORPAY
-    // =========================
-
-    const rzp = new (
-      window as any
-    ).Razorpay(options);
-
-    rzp.on(
-      "payment.failed",
-      (response: any) => {
-        console.error(
-          "Payment Failed:",
-          response
-        );
-
-        toast.error(
-          response.error.description ||
-            "Payment failed"
-        );
-      }
-    );
-
-    rzp.open();
-  } catch (error: any) {
-    console.error(
-      "Create Order Error:",
-      error
-    );
-
-    toast.error(
-      error?.response?.data?.message ||
+      toast.error(
+        error?.response?.data?.message ||
         error.message ||
         "Something went wrong while initiating payment."
-    );
-  }
-};
+      );
+    }
+  };
   const handleSubmit = async (
     e: React.FormEvent
   ) => {
@@ -312,14 +358,14 @@ const paymentRef = useRef<HTMLDivElement>(null);const handleCreateOrder = async 
     ) {
       calculatedAmount =
         meditationSessionPricing.get(session) || 0;
-    // Vastu pricing
+      // Vastu pricing
     } else if (
       serviceName === "Vastu" &&
       session
     ) {
       calculatedAmount =
         vastuSessionPricing.get(session) || 0;
-    // Normal services
+      // Normal services
     } else {
       calculatedAmount =
         servicePricing.get(form.selectedService) || 0;
@@ -334,41 +380,41 @@ const paymentRef = useRef<HTMLDivElement>(null);const handleCreateOrder = async 
     }, 100);
   };
   useEffect(() => {
-  setForm((prev) => ({
-    ...prev,
-    selectedService: serviceName,
-    selectedGuide: guide,
-  }));
-}, [serviceName, guide]);
+    setForm((prev) => ({
+      ...prev,
+      selectedService: serviceName,
+      selectedGuide: guide,
+    }));
+  }, [serviceName, guide]);
 
 
   return (
     <div className="w-full md:max-w-2xl lg:max-w-4xl xl:max-w-5xl mx-auto px-4 py-8">
       {/* Header */}
       <motion.h2
-  className="text-xl md:text-2xl text-[#2f2a25] mb-1"
-  variants={fadeUp}
-  initial="hidden"
-  animate="show"
->
+        className="text-xl md:text-2xl text-[#2f2a25] mb-1"
+        variants={fadeUp}
+        initial="hidden"
+        animate="show"
+      >
         Step 2: Enter Your Details
       </motion.h2>
       <motion.p
-  className="text-sm md:text-lg text-[#736345]/70 mb-6"
-  variants={fadeUp}
-  initial="hidden"
-  animate="show"
->
+        className="text-sm md:text-lg text-[#736345]/70 mb-6"
+        variants={fadeUp}
+        initial="hidden"
+        animate="show"
+      >
         Please fill in your details to proceed with booking
       </motion.p>
 
       {/* Card */}
       <motion.div
-          className="bg-[#e9dac9] rounded-3xl px-4 md:px-8 py-8 w-full overflow-hidden"
-          variants={container}
-          initial="hidden"
-          animate="show"
-        >
+        className="bg-[#e9dac9] rounded-3xl px-4 md:px-8 py-8 w-full overflow-hidden"
+        variants={container}
+        initial="hidden"
+        animate="show"
+      >
         <div className="flex flex-col gap-5 w-full">
 
           {/* Full Name */}
@@ -424,28 +470,28 @@ const paymentRef = useRef<HTMLDivElement>(null);const handleCreateOrder = async 
 
           {/* Selected Service + Guide */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-    <div className="flex flex-col gap-1 min-w-0">
-  <label className="text-sm text-[#736345] font-medium">
-    Selected Service
-  </label>
-  <input
-    type="text"
-    value={form.selectedService}
-    readOnly
-    className="w-full min-w-0 bg-white rounded-lg px-3 py-2 text-sm text-gray-700 outline-none border border-transparent cursor-default"
-  />
-</div>
-       <div className="flex flex-col gap-1 min-w-0">
-  <label className="text-sm text-[#736345] font-medium">
-    Selected Guide
-  </label>
-  <input
-    type="text"
-    value={form.selectedGuide}
-    readOnly
-    className="w-full min-w-0 bg-white rounded-lg px-3 py-2 text-sm text-gray-700 outline-none border border-transparent cursor-default"
-  />
-</div>
+            <div className="flex flex-col gap-1 min-w-0">
+              <label className="text-sm text-[#736345] font-medium">
+                Selected Service
+              </label>
+              <input
+                type="text"
+                value={form.selectedService}
+                readOnly
+                className="w-full min-w-0 bg-white rounded-lg px-3 py-2 text-sm text-gray-700 outline-none border border-transparent cursor-default"
+              />
+            </div>
+            <div className="flex flex-col gap-1 min-w-0">
+              <label className="text-sm text-[#736345] font-medium">
+                Selected Guide
+              </label>
+              <input
+                type="text"
+                value={form.selectedGuide}
+                readOnly
+                className="w-full min-w-0 bg-white rounded-lg px-3 py-2 text-sm text-gray-700 outline-none border border-transparent cursor-default"
+              />
+            </div>
           </div>
 
           {/* Session Type */}
@@ -479,8 +525,8 @@ const paymentRef = useRef<HTMLDivElement>(null);const handleCreateOrder = async 
             </div>
           </div>
 
-          {/* Preferred Time & Date */}
-          <div className="flex flex-col gap-1 w-full">
+          {/* Preferred Time & Date
+          <div className="flex flex-col gap-1 w-full border-2 border-black">
             <label className="text-sm text-[#736345] font-medium">
               Preferred Time & Date
             </label>
@@ -491,7 +537,7 @@ const paymentRef = useRef<HTMLDivElement>(null);const handleCreateOrder = async 
               onChange={handleChange}
               className="w-full min-w-0 bg-white rounded-lg px-3 py-2 text-sm text-gray-700 outline-none border border-transparent focus:border-[#736345]/40"
             />
-          </div>
+          </div> */}
 
           {/* Concern / Focus Area */}
           <div className="flex flex-col gap-1 w-full">
@@ -520,67 +566,97 @@ const paymentRef = useRef<HTMLDivElement>(null);const handleCreateOrder = async 
           </p>
         </div>
       </motion.div>
-    {isSubmitted && (
+      {isSubmitted && (
         <div ref={paymentRef}>
-      <motion.div
-        initial="hidden"
-        animate="show"
-        variants={fadeUp}
-        className="w-full md:max-w-3xl lg:max-w-4xl xl:max-w-5xl mx-auto px-2 py-8"
-      >
-      {/* Header */}
-      <h2 className="text-xl md:text-2xl text-[#2f2a25] mb-1">
-       Step 3: Payment Summary
-      </h2>
-      <p className="text-sm md:text-lg text-[#736345]/70 mb-6">
-       Complete your payment to confirm your booking
-      </p>
+          <motion.div
+            initial="hidden"
+            animate="show"
+            variants={fadeUp}
+            className="w-full md:max-w-3xl lg:max-w-4xl xl:max-w-5xl mx-auto px-2 py-8"
+          >
+            {/* Header */}
+            <h2 className="text-xl md:text-2xl text-[#2f2a25] mb-1">
+              Step 3: Payment Summary
+            </h2>
+            <p className="text-sm md:text-lg text-[#736345]/70 mb-6">
+              Complete your payment to confirm your booking
+            </p>
 
-      {/* Card */}
-      <div className="bg-[#e9dac9] rounded-3xl px-4 py-6">
-        <div className="flex flex-col gap-3 text-[#2f2a25] text-sm md:text-base">
+            {/* Card */}
+            <div className="bg-[#e9dac9] rounded-3xl px-4 py-6">
+              <div className="flex flex-col gap-3 text-[#2f2a25] text-sm md:text-base">
 
-          <span className="font-semibold text-lg mb-2">Payment Summary</span>
+                <span className="font-semibold text-lg mb-2">Payment Summary</span>
 
-          <div className="flex justify-between">
-            <span className="text-[#736345]">Service:</span>
-            <span>{form.selectedService || "—"}</span>
-          </div>
+                <div className="flex justify-between">
+                  <span className="text-[#736345]">Service:</span>
+                  <span>{form.selectedService || "—"}</span>
+                </div>
 
-          <div className="flex justify-between">
-            <span className="text-[#736345]">Guide:</span>
-            <span>{form.selectedGuide || "—"}</span>
-          </div>
+                <div className="flex justify-between">
+                  <span className="text-[#736345]">Guide:</span>
+                  <span>{form.selectedGuide || "—"}</span>
+                </div>
 
-          <div className="flex justify-between">
-            <span className="text-[#736345]">Mode:</span>
-            <span>
-              {form.sessionType === "online"
-                ? "Online (Zoom / Google Meet)"
-                : form.sessionType === "offline"
-                ? "Offline (Studio)"
-                : "—"}
-            </span>
-          </div>
+                <div className="flex justify-between">
+                  <span className="text-[#736345]">Mode:</span>
+                  <span>
+                    {form.sessionType === "online"
+                      ? "Online (Zoom / Google Meet)"
+                      : form.sessionType === "offline"
+                        ? "Offline (Studio)"
+                        : "—"}
+                  </span>
+                </div>
 
-          <div className="flex justify-between font-semibold text-lg mt-2">
-            <span>Amount:</span>
-            <span>Rs {amount}/-</span>
-          </div>
+                <div className="flex justify-between font-semibold text-lg mt-2">
+                  <span>Amount:</span>
+                  <span>Rs {amount}/-</span>
+                </div>
 
-          {/* Buttons */}
-          <button onClick={handleCreateOrder} className="mt-4 bg-[#3f5c4a] text-white py-3 rounded-xl text-sm font-medium hover:bg-[#162d22] transition">
-            Pay 
-          </button>
+                {/* Buttons */}
+                <button onClick={handleCreateOrder} className="mt-4 bg-[#3f5c4a] text-white py-3 rounded-xl text-sm font-medium hover:bg-[#162d22] transition">
+                  Pay
+                </button>
 
-          {/* <button className="bg-[#8b6b4a] text-white py-3 rounded-xl text-sm font-medium">
+                {/* <button className="bg-[#8b6b4a] text-white py-3 rounded-xl text-sm font-medium">
             Pay via Bank Transfer
           </button> */}
+              </div>
+            </div>
+          </motion.div>
         </div>
-      </div>
-    </motion.div>
-     </div>
-    )}
-  </div>
+      )}
+
+      {/* Calendly PopupModal — shown after payment success */}
+      {showCalendly && calendlyUrl && (
+        <SlotSelector
+          url={calendlyUrl}
+          open={showCalendly}
+          onClose={() => {
+            setShowCalendly(false);
+            if (!slotBooked) {
+              toast.warning("You haven't selected a slot yet. You can book your slot anytime using the button below.");
+            }
+          }}
+          prefill={{
+            name: form.fullName,
+            email: form.email,
+          }}
+        />
+      )}
+
+      {/* Show 'Book Slot' button if payment done but slot not booked */}
+      {paidBookingId && !slotBooked && !showCalendly && calendlyUrl && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+          <button
+            onClick={() => setShowCalendly(true)}
+            className="bg-[#3f5c4a] text-white px-6 py-3 rounded-full text-sm font-semibold shadow-lg hover:bg-[#162d22] transition-all duration-200 flex items-center gap-2"
+          >
+            <span>Book Your Slot</span>
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
