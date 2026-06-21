@@ -39,10 +39,14 @@ export default function BookingDetailsForm({ guide, serviceName, session }: Book
         // Update the booking in the backend with the Calendly event URI
         // The backend will use this URI to fetch the actual event start_time if needed
         try {
-          console.log("eventUri", eventUri);
-          console.log("inviteeUri", inviteeUri);
-          console.log("paidBookingId", paidBookingId);
-          await axios.post(
+          // await axios.post(
+          //   `${process.env.NEXT_PUBLIC_API_URL}/payment/update-booking-slot`,
+          //   {
+          //     bookingId: paidBookingId,
+          //     calendlyEventUri: eventUri,
+          //     calendlyInviteeUri: inviteeUri,
+          //   }
+          const response = await axios.post(
             `${process.env.NEXT_PUBLIC_API_URL}/payment/update-booking-slot`,
             {
               bookingId: paidBookingId,
@@ -50,7 +54,9 @@ export default function BookingDetailsForm({ guide, serviceName, session }: Book
               calendlyInviteeUri: inviteeUri,
             }
           );
-          console.log("Booking slot updated successfully");
+
+          console.log("UPDATE SLOT RESPONSE");
+          console.log(response.data);
         } catch (err) {
           console.error("Failed to update booking slot:", err);
         }
@@ -233,10 +239,10 @@ export default function BookingDetailsForm({ guide, serviceName, session }: Book
           }
         ) => {
           try {
-            console.log(
-              "PAYMENT SUCCESS:",
-              razorpayResponse
-            );
+            // console.log(
+            //   "PAYMENT SUCCESS:",
+            //   razorpayResponse
+            // );
 
             // =========================
             // VERIFY PAYMENT
@@ -257,10 +263,10 @@ export default function BookingDetailsForm({ guide, serviceName, session }: Book
                 }
               );
 
-            console.log(
-              "VERIFY RESPONSE:",
-              verifyResponse.data
-            );
+            // console.log(
+            //   "VERIFY RESPONSE:",
+            //   verifyResponse.data
+            // );
 
             if (
               verifyResponse.data.success
