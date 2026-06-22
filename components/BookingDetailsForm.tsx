@@ -352,39 +352,66 @@ export default function BookingDetailsForm({ guide, serviceName, session }: Book
       );
     }
   };
-  const handleSubmit = async (
-    e: React.FormEvent
-  ) => {
-    e.preventDefault();
-    let calculatedAmount = 0;
-    // Meditation pricing
-    if (
-      serviceName === "Meditation" &&
-      session
-    ) {
-      calculatedAmount =
-        meditationSessionPricing.get(session) || 0;
-      // Vastu pricing
-    } else if (
-      serviceName === "Vastu" &&
-      session
-    ) {
-      calculatedAmount =
-        vastuSessionPricing.get(session) || 0;
-      // Normal services
-    } else {
-      calculatedAmount =
-        servicePricing.get(form.selectedService) || 0;
-    }
-    setAmount(calculatedAmount);
-    setIsSubmitted(true);
-    setTimeout(() => {
-      paymentRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    }, 100);
-  };
+ const handleSubmit = async (
+  e: React.FormEvent
+) => {
+  e.preventDefault();
+
+  if (!form.fullName.trim()) {
+    toast.error("Please enter full name");
+    return;
+  }
+
+  // Remove this block if email is optional
+  if (!form.email.trim()) {
+    toast.error("Please enter email");
+    return;
+  }
+
+  if (!form.phone.trim()) {
+    toast.error("Please enter phone number");
+    return;
+  }
+
+  if (!form.sessionType) {
+    toast.error("Please select session type");
+    return;
+  }
+if (!form.concern.trim() || form.concern.trim().length < 6) {
+  toast.error("Concern / Focus Area must be at least 6 characters");
+  return;
+}
+
+  let calculatedAmount = 0;
+
+  if (
+    serviceName === "Meditation" &&
+    session
+  ) {
+    calculatedAmount =
+      meditationSessionPricing.get(session) || 0;
+  } else if (
+    serviceName === "Vastu" &&
+    session
+  ) {
+    calculatedAmount =
+      vastuSessionPricing.get(session) || 0;
+  } else {
+    calculatedAmount =
+      servicePricing.get(form.selectedService) || 0;
+  }
+
+  setAmount(calculatedAmount);
+  setIsSubmitted(true);
+
+  setTimeout(() => {
+    paymentRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }, 100);
+};
+
   useEffect(() => {
     setForm((prev) => ({
       ...prev,

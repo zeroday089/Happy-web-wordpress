@@ -86,7 +86,7 @@ Ethics-based Corporate Culture"
                          <GuideCard
     src="/pritpal.png"
   title="Pritpal Kaur"
-  desc="Akashic Reading"
+  desc="Akashic Reading + Author"
 />
             </motion.div>
           </motion.div>
@@ -196,7 +196,7 @@ Ethics-based Corporate Culture"
                          <GuideCard
     src="/pritpal.png"
   title="Pritpal Kaur"
-  desc="Akashic Reading"
+  desc="Akashic Reading + Author"
 />
             </motion.div>
             </motion.div>

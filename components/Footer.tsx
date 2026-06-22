@@ -127,22 +127,44 @@ export default function Footer() {
               </div>
               <div className="md:col-span-2 flex flex-col items-start md:items-end gap-4 mt-5 md:mt-0 md:ml-auto">
   <div className="flex gap-3 items-center">
-    {[
-      { src: "/200.png", label: "FaceBook" },
-      { src: "/201.png", label: "Instagram" },
-      { src: "/202.png", label: "Twitter" },
-      { src: "/203.png", label: "YouTube" },
-    ].map((item, i) => (
+  {[
+    {
+      src: "/200.png",
+      label: "FaceBook",
+      href: "https://www.facebook.com/share/1dmyQaPUHq/",
+    },
+    {
+      src: "/201.png",
+      label: "Instagram",
+      href: "https://www.instagram.com/happyho.in?igsh=azF6M214OGVwZGlx",
+    },
+    {
+      src: "/202.png",
+      label: "Twitter",
+      href: "https://x.com/HappyHoWorld",
+    },
+    {
+      src: "/203.png",
+      label: "YouTube",
+      href: "https://youtube.com/@happyhoindia?feature=shared",
+    },
+  ].map((item, i) => (
+    <Link
+      key={i}
+      href={item.href}
+      target="_blank"
+      rel="noopener noreferrer"
+    >
       <Image
-        key={i}
         src={item.src}
         alt={item.label}
         width={100}
         height={60}
-        className="w-6 h-6 md:w-12 md:h-12 lg:w-15 lg:h-15 object-contain"
+        className="w-6 h-6 md:w-12 md:h-12 lg:w-15 lg:h-15 object-contain cursor-pointer"
       />
-    ))}
-  </div>
+    </Link>
+  ))}
+</div>
 
   <div className="flex flex-wrap justify-start md:justify-end gap-3 text-xs md:text-sm text-[#544120]">
     <Link

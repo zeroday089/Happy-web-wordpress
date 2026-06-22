@@ -81,7 +81,7 @@ export default function Published() {
               <span className="text-[8px] md:text-sm mt-5 md:mt-10 lg:mt-2">
                 <Link className="cursor-pointer underline"   
                       target="_blank"
-                      rel="noopener noreferrer" href="https://timesofindia.indiatimes.com/blogs/toi-edit-page/unheeded-wisdom-and-a-materialistic-superpower/">
+                      rel="noopener noreferrer" href="https://timesofindia.indiatimes.com/blogs/toi-edit-page/even-victors-find-no-joy-in-aftermath-of-war/">
                   Read on Speaking Tree
                 </Link>
               </span>

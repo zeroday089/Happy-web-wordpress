@@ -60,7 +60,8 @@ export default function Popup({
     expectedParticipation: "",
     goals: "",
     hearAbout: "",
-    agree: false
+    agree: false,
+      otherWorkshopType: ""
   });
 
   if (!open) return null;
@@ -164,6 +165,7 @@ export default function Popup({
       Expected_Participation: formData.expectedParticipation,
       Goals: formData.goals,
       Hear_About: formData.hearAbout,
+        Other_Workshop_Type: formData.otherWorkshopType,
       Agree_To_Contact: formData.agree ? "Yes" : "No",
     };
 
@@ -206,6 +208,7 @@ export default function Popup({
         goals: "",
         hearAbout: "",
         agree: false,
+          otherWorkshopType: "",
       });
 
       onClose();
@@ -391,15 +394,24 @@ export default function Popup({
               </div>
 
 {/* Other */}
-<div className="pt-2">
-  <span className="text-sm font-semibold text-[#444]">
-    Other (Please Specify)
-  </span>
-
-  <hr className="mt-2 border-1 border-black" />
-</div>
-              {/* Session Format */}
 {formData.workshopType === "Other (Please Specify)" && (
+  <div className="pt-2">
+    <span className="text-sm font-semibold text-[#444]">
+      Other (Please Specify)
+    </span>
+
+    <input
+      type="text"
+      name="otherWorkshopType"
+      value={formData.otherWorkshopType}
+      onChange={handleChange}
+      className="mt-2 w-full bg-transparent border-b border-black outline-none px-1 py-0"
+    />
+  </div>
+)}
+
+              {/* Session Format */}
+
   <div>
 
     <label className="block text-sm font-semibold text-[#444] mb-3">
@@ -429,7 +441,6 @@ export default function Popup({
     </div>
 
   </div>
-)}
 
               {/* Date */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
