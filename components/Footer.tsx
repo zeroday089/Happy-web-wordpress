@@ -106,6 +106,9 @@ export default function Footer() {
               </div>
 
               <p className="text-center font-medium">Emotional & Mental Resilience Advisory</p>
+
+
+              
             </div>
           </motion.div>
 
