@@ -23,6 +23,27 @@ function toSlug(calLink: string): string {
     }
 }
 
+/** Check whether a Cal.com modal iframe is currently visible in the DOM. */
+function isCalModalVisible(): boolean {
+    const iframe = document.querySelector(
+        'iframe[src*="cal.com"]'
+    ) as HTMLElement | null;
+
+    if (!iframe) return false;
+
+    // Removed from DOM tree
+    if (!document.body.contains(iframe)) return false;
+
+    // Hidden via CSS (display:none, visibility:hidden, or 0-sized)
+    const style = getComputedStyle(iframe);
+    if (style.display === "none" || style.visibility === "hidden") return false;
+
+    const rect = iframe.getBoundingClientRect();
+    if (rect.width === 0 && rect.height === 0) return false;
+
+    return true;
+}
+
 export function SlotSelector({
     calLink,
     open,
@@ -32,18 +53,15 @@ export function SlotSelector({
 }: SlotSelectorProps) {
     const slug = toSlug(calLink);
 
-    // Stable refs — always point at latest prop values
     const onBookedRef = useRef(onBooked);
     const onCloseRef = useRef(onClose);
     onBookedRef.current = onBooked;
     onCloseRef.current = onClose;
 
-    // Tracks whether booking happened (prevents onClose after successful booking)
     const bookedRef = useRef(false);
-    const modalOpenRef = useRef(false);
     const calRef = useRef<any>(null);
 
-    // ── Initialise Cal.com SDK and register booking listener ONCE on mount ──
+    // ── Init Cal.com SDK + register booking listener ONCE ──
     useEffect(() => {
         let mounted = true;
 
@@ -52,7 +70,6 @@ export function SlotSelector({
             if (!mounted) return;
             calRef.current = cal;
 
-            // Listen for successful bookings
             cal("on", {
                 action: "bookingSuccessfulV2",
                 callback: (e: any) => {
@@ -68,25 +85,21 @@ export function SlotSelector({
             });
         })();
 
-        return () => {
-            mounted = false;
-        };
+        return () => { mounted = false; };
     }, []);
 
-    // ── Open the modal when `open` transitions to true ──
-    // Also watches for the Cal.com modal overlay being removed from the DOM
-    // to reliably detect dismissal (clicking backdrop / X button).
+    // ── Open modal + poll for close ──
     useEffect(() => {
         if (!open) return;
 
         bookedRef.current = false;
-        modalOpenRef.current = true;
 
+        // Open the Cal.com modal
         const openModal = async () => {
             const cal = calRef.current ?? (await getCalApi());
             calRef.current = cal;
-
             console.log("[Cal.com] opening modal for:", slug);
+
             cal("modal", {
                 calLink: slug,
                 config: {
@@ -97,45 +110,34 @@ export function SlotSelector({
         };
         openModal();
 
-        // ── Detect modal close via DOM observation ──
-        // Cal.com adds an overlay + iframe to document.body when the modal
-        // opens. When the user dismisses it, Cal.com removes those elements.
-        // We watch for that removal with a MutationObserver.
-        let observer: MutationObserver | null = null;
+        // Poll to detect when the Cal.com modal disappears.
+        // Phase 1 — wait for the iframe to appear in the DOM.
+        // Phase 2 — once it appeared, detect when it's gone → fire onClose.
+        let appeared = false;
+        const pollId = setInterval(() => {
+            const visible = isCalModalVisible();
 
-        // Give Cal.com a moment to inject its modal, then start observing
-        const timeoutId = setTimeout(() => {
-            observer = new MutationObserver(() => {
-                if (!modalOpenRef.current) return;
-
-                // If there's no Cal.com iframe left, the modal was closed
-                const calIframe = document.querySelector(
-                    'iframe[src*="cal.com"]'
-                );
-                if (!calIframe) {
-                    console.log("[Cal.com] modal closed (DOM observer)");
-                    modalOpenRef.current = false;
-                    observer?.disconnect();
+            if (!appeared) {
+                if (visible) {
+                    appeared = true;
+                    console.log("[Cal.com] modal appeared in DOM");
+                }
+            } else {
+                // It was visible before, now it's gone → modal was closed
+                if (!visible) {
+                    console.log("[Cal.com] modal closed (poll detected)");
+                    clearInterval(pollId);
 
                     if (!bookedRef.current) {
                         onCloseRef.current();
                     }
                     bookedRef.current = false;
                 }
-            });
+            }
+        }, 400);
 
-            observer.observe(document.body, {
-                childList: true,
-                subtree: true,
-            });
-        }, 2000);
-
-        return () => {
-            clearTimeout(timeoutId);
-            observer?.disconnect();
-        };
+        return () => clearInterval(pollId);
     }, [open, slug, prefill?.name, prefill?.email]);
 
-    // Nothing to render — Cal.com manages its own overlay
     return null;
 }
