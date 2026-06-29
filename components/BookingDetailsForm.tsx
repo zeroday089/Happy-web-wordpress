@@ -641,8 +641,8 @@ export default function BookingDetailsForm({ guide, serviceName, session }: Book
         </div>
       )}
 
-      {/* Cal.com Popup — shown after payment success */}
-      {showCal && calLink && (
+      {/* Cal.com Popup — always mounted so SDK initialises once; `open` drives the modal */}
+      {calLink && (
         <SlotSelector
           calLink={calLink}
           open={showCal}

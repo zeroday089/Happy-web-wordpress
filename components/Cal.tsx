@@ -4,78 +4,138 @@ import { useEffect, useRef } from "react";
 import { getCalApi } from "@calcom/embed-react";
 
 interface SlotSelectorProps {
-  calLink: string; // e.g. "username/event-slug"
-  open: boolean;
-  onClose: () => void;
-  onBooked: (data: { uid: string; startTime: string }) => void;
-  prefill?: {
-    name?: string;
-    email?: string;
-  };
+    calLink: string;
+    open: boolean;
+    onClose: () => void;
+    onBooked: (data: { uid: string; startTime: string }) => void;
+    prefill?: {
+        name?: string;
+        email?: string;
+    };
+}
+
+function toSlug(calLink: string): string {
+    try {
+        const url = new URL(calLink);
+        return url.pathname.replace(/^\//, "");
+    } catch {
+        return calLink;
+    }
 }
 
 export function SlotSelector({
-  calLink,
-  open,
-  onClose,
-  onBooked,
-  prefill,
+    calLink,
+    open,
+    onClose,
+    onBooked,
+    prefill,
 }: SlotSelectorProps) {
-  // Keep stable refs so the useEffect callbacks always see the latest values
-  const onBookedRef = useRef(onBooked);
-  const onCloseRef = useRef(onClose);
-  onBookedRef.current = onBooked;
-  onCloseRef.current = onClose;
+    const slug = toSlug(calLink);
 
-  // Register the bookingSuccessfulV2 listener once on mount
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      const cal = await getCalApi();
+    // Stable refs — always point at latest prop values
+    const onBookedRef = useRef(onBooked);
+    const onCloseRef = useRef(onClose);
+    onBookedRef.current = onBooked;
+    onCloseRef.current = onClose;
 
-      cal("on", {
-        action: "bookingSuccessfulV2",
-        callback: (e: any) => {
-          if (!mounted) return;
-          const data = e?.detail?.data ?? {};
-          const uid: string = data?.uid ?? "";
-          const startTime: string = data?.startTime ?? "";
-          onBookedRef.current({ uid, startTime });
-          onCloseRef.current();
-        },
-      });
+    // Tracks whether booking happened (prevents onClose after successful booking)
+    const bookedRef = useRef(false);
+    const modalOpenRef = useRef(false);
+    const calRef = useRef<any>(null);
 
-      // Listen for modal close / dismiss without booking
-      cal("on", {
-        action: "__windowLoadComplete",
-        callback: () => {
-          // no-op — just ensures the script is ready
-        },
-      });
-    })();
+    // ── Initialise Cal.com SDK and register booking listener ONCE on mount ──
+    useEffect(() => {
+        let mounted = true;
 
-    return () => {
-      mounted = false;
-    };
-  }, []); // intentionally empty — listeners registered once
+        (async () => {
+            const cal = await getCalApi();
+            if (!mounted) return;
+            calRef.current = cal;
 
-  // Open the Cal.com popup whenever `open` flips to true
-  useEffect(() => {
-    if (!open) return;
+            // Listen for successful bookings
+            cal("on", {
+                action: "bookingSuccessfulV2",
+                callback: (e: any) => {
+                    if (!mounted) return;
+                    bookedRef.current = true;
+                    const data = e?.detail?.data ?? {};
+                    console.log("[Cal.com] booking confirmed:", data);
+                    onBookedRef.current({
+                        uid: data?.uid ?? "",
+                        startTime: data?.startTime ?? "",
+                    });
+                },
+            });
+        })();
 
-    (async () => {
-      const cal = await getCalApi();
+        return () => {
+            mounted = false;
+        };
+    }, []);
 
-      cal("modal", {
-        calLink,
-        config: {
-          name: prefill?.name ?? "",
-          email: prefill?.email ?? "",
-        },
-      });
-    })();
-  }, [open, calLink, prefill?.name, prefill?.email]);
+    // ── Open the modal when `open` transitions to true ──
+    // Also watches for the Cal.com modal overlay being removed from the DOM
+    // to reliably detect dismissal (clicking backdrop / X button).
+    useEffect(() => {
+        if (!open) return;
 
-  // Cal.com manages its own modal DOM — nothing to render
-  return null;
+        bookedRef.current = false;
+        modalOpenRef.current = true;
+
+        const openModal = async () => {
+            const cal = calRef.current ?? (await getCalApi());
+            calRef.current = cal;
+
+            console.log("[Cal.com] opening modal for:", slug);
+            cal("modal", {
+                calLink: slug,
+                config: {
+                    name: prefill?.name ?? "",
+                    email: prefill?.email ?? "",
+                },
+            });
+        };
+        openModal();
+
+        // ── Detect modal close via DOM observation ──
+        // Cal.com adds an overlay + iframe to document.body when the modal
+        // opens. When the user dismisses it, Cal.com removes those elements.
+        // We watch for that removal with a MutationObserver.
+        let observer: MutationObserver | null = null;
+
+        // Give Cal.com a moment to inject its modal, then start observing
+        const timeoutId = setTimeout(() => {
+            observer = new MutationObserver(() => {
+                if (!modalOpenRef.current) return;
+
+                // If there's no Cal.com iframe left, the modal was closed
+                const calIframe = document.querySelector(
+                    'iframe[src*="cal.com"]'
+                );
+                if (!calIframe) {
+                    console.log("[Cal.com] modal closed (DOM observer)");
+                    modalOpenRef.current = false;
+                    observer?.disconnect();
+
+                    if (!bookedRef.current) {
+                        onCloseRef.current();
+                    }
+                    bookedRef.current = false;
+                }
+            });
+
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true,
+            });
+        }, 2000);
+
+        return () => {
+            clearTimeout(timeoutId);
+            observer?.disconnect();
+        };
+    }, [open, slug, prefill?.name, prefill?.email]);
+
+    // Nothing to render — Cal.com manages its own overlay
+    return null;
 }
