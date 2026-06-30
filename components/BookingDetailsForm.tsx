@@ -5,67 +5,47 @@ import { motion } from "framer-motion";
 import axios from "axios";
 import { BookingDetailsFormProps, BookingFormData, meditationSessionPricing, servicePricing, vastuSessionPricing } from "@/type/api";
 import { toast } from "sonner";
-import { SlotSelector } from "./Calendly";
-import { getCalendlyUrl } from "@/constants/calendlyUrls";
+import { SlotSelector } from "./Cal";
+import { getCalLink } from "@/constants/calUrls";
 
 export default function BookingDetailsForm({ guide, serviceName, session }: BookingDetailsFormProps) {
 
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [amount, setAmount] = useState<number>(0);
-  const [showCalendly, setShowCalendly] = useState(false);
+  const [showCal, setShowCal] = useState(false);
   const [paidBookingId, setPaidBookingId] = useState<string | null>(null);
   const [slotBooked, setSlotBooked] = useState(false);
 
-  // Look up the Calendly URL for this guide + service
-  const calendlyUrl = getCalendlyUrl(guide, serviceName);
+  // Look up the Cal.com calLink for this guide + service
+  const calLink = getCalLink(guide, serviceName);
 
-  // Listen for Calendly event_scheduled postMessage
-  useEffect(() => {
-    const handleCalendlyEvent = async (e: MessageEvent) => {
-      // Debug: log all Calendly messages
-      if (e.data?.event?.startsWith?.("calendly")) {
-        console.log("Calendly event received:", e.data.event);
-        console.log("Calendly payload:", JSON.stringify(e.data.payload, null, 2));
-      }
+  // paidBookingId ref — always up-to-date inside the onBooked callback
+  const paidBookingIdRef = useRef<string | null>(null);
+  paidBookingIdRef.current = paidBookingId;
 
-      if (e.data?.event === "calendly.event_scheduled" && paidBookingId) {
-        const eventUri = e.data.payload?.event?.uri;
-        const inviteeUri = e.data.payload?.invitee?.uri;
+  // Called by SlotSelector (Cal.com SDK) once a slot is confirmed
+  const handleBooked = async ({ uid, startTime }: { uid: string; startTime: string }) => {
+    const bookingId = paidBookingIdRef.current;
+    if (!bookingId) return;
 
-        toast.success("Slot booked successfully!");
-        setShowCalendly(false);
-        setSlotBooked(true);
+    toast.success("Slot booked successfully!");
+    setShowCal(false);
+    setSlotBooked(true);
 
-        // Update the booking in the backend with the Calendly event URI
-        // The backend will use this URI to fetch the actual event start_time if needed
-        try {
-          // await axios.post(
-          //   `${process.env.NEXT_PUBLIC_API_URL}/payment/update-booking-slot`,
-          //   {
-          //     bookingId: paidBookingId,
-          //     calendlyEventUri: eventUri,
-          //     calendlyInviteeUri: inviteeUri,
-          //   }
-          const response = await axios.post(
-            `${process.env.NEXT_PUBLIC_API_URL}/payment/update-booking-slot`,
-            {
-              bookingId: paidBookingId,
-              calendlyEventUri: eventUri,
-              calendlyInviteeUri: inviteeUri,
-            }
-          );
-
-          console.log("UPDATE SLOT RESPONSE");
-          console.log(response.data);
-        } catch (err) {
-          console.error("Failed to update booking slot:", err);
+    try {
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/payment/update-booking-slot`,
+        {
+          bookingId,
+          calBookingUid: uid,
+          calStartTime: startTime,
         }
-      }
-    };
-
-    window.addEventListener("message", handleCalendlyEvent);
-    return () => window.removeEventListener("message", handleCalendlyEvent);
-  }, [paidBookingId]);
+      );
+      console.log("UPDATE SLOT RESPONSE", response.data);
+    } catch (err) {
+      console.error("Failed to update booking slot:", err);
+    }
+  };
 
   const container = {
     hidden: {},
@@ -273,8 +253,8 @@ export default function BookingDetailsForm({ guide, serviceName, session }: Book
             ) {
               toast.success("Payment successful! Please Wait to Select Slot");
               setPaidBookingId(paymentData.bookingId);
-              if (calendlyUrl) {
-                setShowCalendly(true);
+              if (calLink) {
+                setShowCal(true);
               }
             } else {
               toast.error(
@@ -352,65 +332,65 @@ export default function BookingDetailsForm({ guide, serviceName, session }: Book
       );
     }
   };
- const handleSubmit = async (
-  e: React.FormEvent
-) => {
-  e.preventDefault();
+  const handleSubmit = async (
+    e: React.FormEvent
+  ) => {
+    e.preventDefault();
 
-  if (!form.fullName.trim()) {
-    toast.error("Please enter full name");
-    return;
-  }
+    if (!form.fullName.trim()) {
+      toast.error("Please enter full name");
+      return;
+    }
 
-  // Remove this block if email is optional
-  if (!form.email.trim()) {
-    toast.error("Please enter email");
-    return;
-  }
+    // Remove this block if email is optional
+    if (!form.email.trim()) {
+      toast.error("Please enter email");
+      return;
+    }
 
-  if (!form.phone.trim()) {
-    toast.error("Please enter phone number");
-    return;
-  }
+    if (!form.phone.trim()) {
+      toast.error("Please enter phone number");
+      return;
+    }
 
-  if (!form.sessionType) {
-    toast.error("Please select session type");
-    return;
-  }
-if (!form.concern.trim() || form.concern.trim().length < 6) {
-  toast.error("Concern / Focus Area must be at least 6 characters");
-  return;
-}
+    if (!form.sessionType) {
+      toast.error("Please select session type");
+      return;
+    }
+    if (!form.concern.trim() || form.concern.trim().length < 6) {
+      toast.error("Concern / Focus Area must be at least 6 characters");
+      return;
+    }
 
-  let calculatedAmount = 0;
+    let calculatedAmount = 0;
 
-  if (
-    serviceName === "Meditation" &&
-    session
-  ) {
-    calculatedAmount =
-      meditationSessionPricing.get(session) || 0;
-  } else if (
-    serviceName === "Vastu" &&
-    session
-  ) {
-    calculatedAmount =
-      vastuSessionPricing.get(session) || 0;
-  } else {
-    calculatedAmount =
-      servicePricing.get(form.selectedService) || 0;
-  }
+    if (
+      serviceName === "Meditation" &&
+      session
+    ) {
+      calculatedAmount =
+        meditationSessionPricing.get(session) || 0;
+    } else if (
+      serviceName === "Vastu" &&
+      session
+    ) {
+      calculatedAmount =
+        vastuSessionPricing.get(session) || 0;
+    } else {
+      calculatedAmount =
+        servicePricing.get(form.selectedService) || 0;
+    }
 
-  setAmount(calculatedAmount);
-  setIsSubmitted(true);
+    setAmount(calculatedAmount);
+    setIsSubmitted(true);
 
-  setTimeout(() => {
-    paymentRef.current?.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
-  }, 100);
-};
+    setTimeout(() => {
+      paymentRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 100);
+  };
 
   useEffect(() => {
     setForm((prev) => ({
@@ -661,17 +641,18 @@ if (!form.concern.trim() || form.concern.trim().length < 6) {
         </div>
       )}
 
-      {/* Calendly PopupModal — shown after payment success */}
-      {showCalendly && calendlyUrl && (
+      {/* Cal.com Popup — always mounted so SDK initialises once; `open` drives the modal */}
+      {calLink && (
         <SlotSelector
-          url={calendlyUrl}
-          open={showCalendly}
+          calLink={calLink}
+          open={showCal}
           onClose={() => {
-            setShowCalendly(false);
+            setShowCal(false);
             if (!slotBooked) {
               toast.warning("You haven't selected a slot yet. You can book your slot anytime using the button below.");
             }
           }}
+          onBooked={handleBooked}
           prefill={{
             name: form.fullName,
             email: form.email,
@@ -680,10 +661,10 @@ if (!form.concern.trim() || form.concern.trim().length < 6) {
       )}
 
       {/* Show 'Book Slot' button if payment done but slot not booked */}
-      {paidBookingId && !slotBooked && !showCalendly && calendlyUrl && (
+      {paidBookingId && !slotBooked && !showCal && calLink && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
           <button
-            onClick={() => setShowCalendly(true)}
+            onClick={() => setShowCal(true)}
             className="bg-[#3f5c4a] text-white px-6 py-3 rounded-full text-sm font-semibold shadow-lg hover:bg-[#162d22] transition-all duration-200 flex items-center gap-2"
           >
             <span>Book Your Slot</span>
