@@ -6,7 +6,7 @@ import axios from "axios";
 import { BookingDetailsFormProps, BookingFormData, meditationSessionPricing, servicePricing, vastuSessionPricing } from "@/type/api";
 import { toast } from "sonner";
 import { SlotSelector } from "./Cal";
-import { getCalLink } from "@/constants/calUrls";
+import { countryCodes, getCalLink } from "@/constants/calUrls";
 
 export default function BookingDetailsForm({ guide, serviceName, session }: BookingDetailsFormProps) {
 
@@ -357,10 +357,11 @@ export default function BookingDetailsForm({ guide, serviceName, session }: Book
       toast.error("Please select session type");
       return;
     }
-    if (!form.concern.trim() || form.concern.trim().length < 6) {
-      toast.error("Concern / Focus Area must be at least 6 characters");
-      return;
-    }
+   
+if (form.concern.trim() && form.concern.trim().length < 5) {
+  toast.error("Concern / Focus Area must be at least 5 characters");
+  return;
+}
 
     let calculatedAmount = 0;
 
@@ -458,26 +459,28 @@ export default function BookingDetailsForm({ guide, serviceName, session }: Book
                 className="w-full min-w-0 bg-white rounded-lg px-3 py-2 text-sm text-gray-700 outline-none border border-transparent focus:border-[#736345]/40"
               />
             </div>
-            <div className="flex flex-col gap-1 min-w-0">
-              <label className="text-sm text-[#736345] font-medium">
-                Phone Number*
-              </label>
-              <div className="flex gap-2 min-w-0">
-                <input
-                  type="text"
-                  name="countryCode"
-                  value={form.countryCode}
-                  onChange={handleChange}
-                  className="w-14 flex-shrink-0 bg-white rounded-lg px-2 py-2 text-sm text-gray-700 outline-none border border-transparent focus:border-[#736345]/40 text-center"
-                />
-                <input
-                  type="tel"
-                  name="phone"
-                  value={form.phone}
-                  onChange={handleChange}
-                  className="flex-1 min-w-0 bg-white rounded-lg px-3 py-2 text-sm text-gray-700 outline-none border border-transparent focus:border-[#736345]/40"
-                />
-              </div>
+           <div className="flex gap-2 min-w-0">
+              <select
+                name="countryCode"
+                value={form.countryCode}
+                onChange={handleChange}
+                className="w-28 flex-shrink-0 bg-white rounded-lg px-2 py-2 text-sm text-gray-700 outline-none border border-transparent focus:border-[#736345]/40"
+              >
+                {countryCodes.map((item) => (
+                  <option key={item.code} value={item.code}>
+                    {item.code}
+                  </option>
+                ))}
+              </select>
+
+              <input
+                type="tel"
+                name="phone"
+                value={form.phone}
+                onChange={handleChange}
+                placeholder="Phone Number"
+                className="flex-1 min-w-0 bg-white rounded-lg px-3 py-2 text-sm text-gray-700 outline-none border border-transparent focus:border-[#736345]/40"
+              />
             </div>
           </div>
 
