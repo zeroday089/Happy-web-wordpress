@@ -53,6 +53,24 @@ export interface BookingDetailsFormProps {
   session?: string;
 }
 
+export interface Article {
+  _id: string;
+  articleName: string;
+  articleText: string;
+  articleLink: string;
+  articleLogo: string;
+  isActive?: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ArticleFormData {
+  articleName: string;
+  articleText: string;
+  articleLink: string;
+  articleLogo: string;
+}
+
 export const servicePricing = new Map<string, number>([
   ["Tarot Guidance", 3000],
   ["Energy Healing", 7500],

@@ -104,13 +104,22 @@ export default function BookingsDashboard() {
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 p-6 font-sans">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight text-white">
-          Bookings Dashboard
-        </h1>
-        <p className="text-zinc-400 mt-1 text-sm">
-          Manage and view all session bookings
-        </p>
+      <div className="mb-8 flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-white">
+            Bookings Dashboard
+          </h1>
+          <p className="text-zinc-400 mt-1 text-sm">
+            Manage and view all session bookings
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          className="border-zinc-700 bg-zinc-800 hover:bg-zinc-700 text-zinc-300"
+          onClick={() => router.push("/Admin/articles")}
+        >
+          Manage Articles
+        </Button>
       </div>
 
       {/* Stats Cards */}
