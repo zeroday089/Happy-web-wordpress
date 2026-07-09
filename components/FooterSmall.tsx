@@ -86,6 +86,8 @@ export default function FooterSmall() {
     </span>
     <p className="text-center font-medium text-xs">Emotional & Mental Resilience Advisory</p>
          </div>
+      </div>
+    </div>
 
     {/* Contact Section */}
     <motion.div className="flex flex-col gap-2" variants={fadeUp}>

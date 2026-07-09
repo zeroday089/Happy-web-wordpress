@@ -154,20 +154,4 @@ export function SlotSelector({
     }, [open, slug, prefill?.name, prefill?.email]);
 
     return null;
-}        bookedRef.current = false;
-                }
-            }
-        }, 400);
-
-<<<<<<< HEAD
-        return () => {
-            cancelled = true;
-            clearInterval(pollId);
-        };
-=======
-        return () => clearInterval(pollId);
->>>>>>> 15a0746c1eed0eb885cad3a223acf8165165f983
-    }, [open, slug, prefill?.name, prefill?.email]);
-
-    return null;
 }
