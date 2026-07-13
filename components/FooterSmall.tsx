@@ -35,7 +35,7 @@ export default function FooterSmall() {
   <motion.div className="flex flex-col gap-10" variants={fadeUp}>
 
     {/* Mobile Layout */}
-    <div></div> className="flex md:hidden gap-4"
+    <div className="flex md:hidden gap-4">
       {/* Left: All 3 sections stacked vertically */}
       <div className="flex flex-col gap-6 flex-1">
         {/* About */}
@@ -75,18 +75,17 @@ export default function FooterSmall() {
       </div>
 
       {/* Right: Logo/Image only on mobile */}
-      <div className="flex items-start justify-center w-[110px] flex-shrink-0">
-          <div className="relative w-full flex flex-col items-center gap-2">
-            <div className="relative w-fit">
-              <Image src="/footerImage.png" alt="Meditation" width={100} height={100} />
-              {/* ® symbol */}
-              <span className="absolute top-0 right-1 text-xl font-bold">
-                ®
-              </span>
-            </div>
-            <p className="text-center font-medium text-[10px] text-[#544120] leading-tight">Emotional & Mental Resilience Advisory</p>
-          </div>
+      <div className="flex items-start justify-end">
+          <div className="relative w-fit">
+        <Image src="/footerImage.png" alt="Meditation" width={130} height={130} />
+          {/* ® symbol */}
+    <span className="absolute top-0 right-2 text-2xl font-bold">
+      ®
+    </span>
+    <p className="text-center font-medium text-xs">Emotional & Mental Resilience Advisory</p>
+         </div>
       </div>
+    </div>
 
     {/* Contact Section */}
     <motion.div className="flex flex-col gap-2" variants={fadeUp}>
