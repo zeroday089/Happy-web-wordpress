@@ -74,18 +74,20 @@ export default function FooterSmall() {
         </motion.div>
       </div>
 
-      {/* Right: Logo/Image only on mobile */}
-      <div className="flex items-start justify-end">
-          <div className="relative w-fit">
-        <Image src="/footerImage.png" alt="Meditation" width={130} height={130} />
-          {/* ® symbol */}
-    <span className="absolute top-0 right-2 text-2xl font-bold">
-      ®
-    </span>
-    <p className="text-center font-medium text-xs">Emotional & Mental Resilience Advisory</p>
+    {/* Right: Logo/Image only on mobile */}
+      <div className="flex items-start justify-end w-[140px] flex-shrink-0">
+          <div className="relative w-full flex flex-col items-center">
+            <div className="relative w-fit">
+              <Image src="/footerImage.png" alt="Meditation" width={100} height={100} />
+              {/* ® symbol */}
+              <span className="absolute top-0 -right-3 text-xl font-bold">
+                ®
+              </span>
+            </div>
+            <p className="text-center font-medium text-xs text-[#544120] mt-2">Emotional & Mental Resilience Advisory</p>
          </div>
       </div>
-    </div>
+    </div> 
 
     {/* Contact Section */}
     <motion.div className="flex flex-col gap-2" variants={fadeUp}>
