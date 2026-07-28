@@ -51,13 +51,6 @@ export default function Guides() {
           {/* Column 1 */}
           <motion.div variants={fadeUp} className="flex md:flex-col gap-2 md:gap-3">
             <motion.div whileHover={{ scale: 1.05 }}>
-             <GuideCard
-  src="/Pooja-Chandra_HH.png"
-  title="Pooja Chandra"
-  desc="Conscious Guidance + Energy Healing"
-/>
-            </motion.div>
-            <motion.div whileHover={{ scale: 1.05 }}>
               <GuideCardlarge
       src="/44.png"
   title="Dr.Sandeep Nath"
@@ -121,13 +114,6 @@ Name Correction"
   desc="Career & Business Coach + Motivational Speaker + Author"
 />
             </motion.div>
-            <motion.div whileHover={{ scale: 1.05 }}>
-               <GuideCard
-                src="/guid11.jpeg"
-  title="Monika Shankar"
-  desc="Tarot + Astrology"
-/>
-            </motion.div>
           </motion.div>
 
         </motion.div>
@@ -143,13 +129,6 @@ Name Correction"
         >
           {/* Column 1 */}
           <motion.div variants={fadeUp} className="flex flex-col gap-4">
-            <motion.div whileHover={{ scale: 1.05 }}>
-               <GuideCard
-  src="/Pooja-Chandra_HH.png"
-  title="Pooja Chandra"
-  desc="Conscious Guidance + Energy Healing"
-/>
-            </motion.div>
             <motion.div whileHover={{ scale: 1.05 }}>
                <GuideCardlarge
              src="/42.png"
@@ -205,13 +184,6 @@ Ethics-based Corporate Culture"
               src="/NageshAlai_HH.png"
   title="Nagesh Alai"
   desc="Career & Business Coach + Motivational Speaker + Author"
-/>
-            </motion.div>
-            <motion.div whileHover={{ scale: 1.05 }}>
-                 <GuideCardlarge
-                src="/guid11.jpeg"
-  title="Monika Shankar"
-  desc="Tarot + Astrology"
 />
             </motion.div>
           </motion.div>
