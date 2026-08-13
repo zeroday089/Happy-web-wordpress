@@ -74,7 +74,7 @@ export default async function ResourcesPage({ searchParams }: ResourcesPageProps
     error = "Articles are loading slowly right now. Please try again.";
   }
 
-  const featured = posts.slice(0, 3);
+  const featured = posts.slice(0, 2);
   const hasNext = posts.length === 10;
 
   return (
@@ -93,7 +93,6 @@ export default async function ResourcesPage({ searchParams }: ResourcesPageProps
             <div className="md:row-span-2">{featured[0] ? <FeaturedCard post={featured[0]} /> : null}</div>
             <div className="space-y-6">
               {featured[1] ? <FeaturedCard post={featured[1]} compact /> : null}
-              {featured[2] ? <FeaturedCard post={featured[2]} compact /> : null}
             </div>
           </div>
         )}
