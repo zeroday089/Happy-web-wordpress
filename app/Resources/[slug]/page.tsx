@@ -6,7 +6,6 @@ import FooterSmall from "@/components/FooterSmall";
 import BlogNavigationButton from "@/components/BlogNavigationButton";
 import {
   fetchWordPressPostBySlug,
-  removeDuplicateFeaturedImageFromContent,
   resolvePostImage,
   sanitizeWordPressHtml,
   SITE_URL,
@@ -52,7 +51,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
   }
 
   const featuredImage = resolvePostImage(post);
-  const cleanedContent = removeDuplicateFeaturedImageFromContent(post.content.rendered, featuredImage);
+  const cleanedContent = sanitizeWordPressHtml(post.content.rendered);
   const hasImageInContent = /<img\b/i.test(cleanedContent);
 
   return (
@@ -75,12 +74,12 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
       </div>
 
       <section className="px-6 xl:px-8 py-10 mx-auto max-w-[980px]">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
         {!hasImageInContent ? (
+          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={featuredImage}
             alt={stripHtml(post.title.rendered)}
-            className="w-full max-h-[480px] object-cover rounded-3xl"
+            className="block max-w-full h-auto mx-auto rounded-3xl"
           />
         ) : null}
         <article
